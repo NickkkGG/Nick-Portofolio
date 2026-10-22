@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, VT323 } from "next/font/google";
+import "lenis/dist/lenis.css";
 import "./globals.css";
 
 const vt323 = VT323({
