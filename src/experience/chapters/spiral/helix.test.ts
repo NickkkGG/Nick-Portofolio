@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { focusedIndex, helixSlots, slotKeyframeT } from './helix';
+import { focusedIndex, helixSlots, monitorFocus, slotKeyframeT } from './helix';
 
 const radiusOf = ([x, , z]: [number, number, number]) => Math.hypot(x, z);
 
@@ -35,6 +35,14 @@ describe('helix', () => {
     expect(focusedIndex(1, 6)).toBe(5);
     expect(focusedIndex(0.55, 6)).toBe(3);
     expect(focusedIndex(0.5, 9)).toBe(4);
+  });
+
+  it('monitorFocus is full in front of a monitor and fades toward its neighbours', () => {
+    expect(monitorFocus(slotKeyframeT(2, 6), 2, 6)).toBe(1);
+    expect(monitorFocus(slotKeyframeT(2, 6), 3, 6)).toBe(0);
+    const between = (slotKeyframeT(2, 6) + slotKeyframeT(3, 6)) / 2;
+    expect(monitorFocus(between, 2, 6)).toBeCloseTo(0.5);
+    expect(monitorFocus(between, 3, 6)).toBeCloseTo(0.5);
   });
 
   it('slotKeyframeT agrees with focusedIndex', () => {

@@ -30,7 +30,7 @@ const preset = (top: string, horizon: string, bottom: string, fog: string, fogDe
 
 /** Colours are sRGB; the scene converts them to linear. */
 export const ATMOSPHERES: Record<ChapterId, Atmosphere> = {
-  room: preset('#1a2e3a', '#0d1a20', '#050708', '#0c1418', 0.008, 1.5),
+  room: preset('#1a2e3a', '#0d1a20', '#050708', '#0c1418', 0.008, 1.4),
   fall: preset('#2a4452', '#0e1b21', '#030405', '#0a1317', 0.012, 1.35),
   spiral: preset('#1d5a56', '#0d2b2c', '#030a0b', '#0f2f30', 0.02, 1.4),
   problem: preset('#4a1210', '#1e0807', '#050202', '#240a08', 0.03, 1.35),

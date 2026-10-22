@@ -41,7 +41,7 @@ export function DepthsBlockout() {
   return (
     <group ref={ref}>
       <mesh position={[0, -180, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[20, 20]} />
+        <planeGeometry args={[200, 200]} />
         <meshStandardMaterial color="#0f2a2a" roughness={0.35} />
       </mesh>
       <mesh position={BULB}>

@@ -18,7 +18,7 @@ export function RoomBlockout() {
   return (
     <group ref={ref}>
       {/* Fill so walls read in the dark; the moon, lamp and monitor do the shaping. */}
-      <hemisphereLight args={['#3a4a58', '#120f0c', 0.6]} />
+      <hemisphereLight args={['#3a4a58', '#120f0c', 0.42]} />
 
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[6, 6]} />
@@ -76,7 +76,7 @@ export function RoomBlockout() {
         position={[-4.5, 2.6, -0.6]}
         target-position={[-0.5, 0, 0.6]}
         color="#8fb3e6"
-        intensity={25}
+        intensity={16}
         angle={0.6}
         penumbra={0.7}
         decay={0}
