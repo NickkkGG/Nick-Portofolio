@@ -17,8 +17,10 @@ export function EffectsStack() {
     effect.uniforms.get('uFade')!.value = fadeAt(p);
   });
 
+  // One pass per effect, in this order. Merged into one pass, postprocessing sorts the
+  // convolution VHS effect before Bloom, so bloom would glow through the blackout.
   return (
-    <EffectComposer multisampling={4}>
+    <EffectComposer multisampling={4} mergeMode="none">
       <Bloom mipmapBlur intensity={0.6} luminanceThreshold={0.6} />
       <Vhs ref={vhs} />
     </EffectComposer>

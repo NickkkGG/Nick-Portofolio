@@ -54,13 +54,52 @@ export function ScrollDriver() {
       jumpTo(p);
       jumping = false;
     };
+    // Native keyboard scrolling stops at the document's ends, which breaks the infinite
+    // loop, and its jumps would be counted as loops. Keys move the story through Lenis.
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Home') {
-        event.preventDefault();
-        api.toChapter('room');
-      } else if (event.key === 'End') {
-        event.preventDefault();
+      const onControl = (event.target as Element | null)?.closest?.('a, button, input, textarea, select');
+      if (onControl && (event.key === ' ' || event.key === 'Enter')) return;
+      const command = event.metaKey || event.ctrlKey;
+      const line = window.innerHeight * 0.1;
+      const screen = window.innerHeight * 0.875;
+      let delta = 0;
+      switch (event.key) {
+        case 'Home':
+          event.preventDefault();
+          api.toChapter('room');
+          return;
+        case 'End':
+          event.preventDefault();
+          return;
+        case 'ArrowUp':
+          if (command) {
+            event.preventDefault();
+            api.toChapter('room');
+            return;
+          }
+          delta = -line;
+          break;
+        case 'ArrowDown':
+          if (command) {
+            event.preventDefault();
+            return;
+          }
+          delta = line;
+          break;
+        case 'PageUp':
+          delta = -screen;
+          break;
+        case 'PageDown':
+          delta = screen;
+          break;
+        case ' ':
+          delta = event.shiftKey ? -screen : screen;
+          break;
+        default:
+          return;
       }
+      event.preventDefault();
+      if (store().started) lenis.scrollTo(lenis.scroll + delta);
     };
     window.addEventListener('resize', onResize);
     window.addEventListener('keydown', onKeyDown);

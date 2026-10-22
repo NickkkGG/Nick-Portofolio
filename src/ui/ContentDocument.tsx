@@ -7,7 +7,10 @@ import { content } from '@/content';
 export function ContentDocument() {
   const { site, projects, about, stack, contact } = content;
   return (
-    <div data-testid="content-document" className="sr-only">
+    // fixed (not sr-only's absolute): focusing a link or a find-in-page match in here
+    // must never scroll the document, which would throw the story back to the room.
+    <div data-testid="content-document" className="sr-only fixed! top-0 left-0">
+
       <h1>
         {site.name} — {site.role}
       </h1>

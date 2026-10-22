@@ -67,6 +67,54 @@ test.describe('infinite scroll', () => {
     expect(s.loopIndex).toBe(1);
   });
 
+  test('Space keeps paging forward through the seam', async ({ page }) => {
+    await play(page);
+    await jumpTo(page, 0.95);
+    for (let i = 0; i < 4; i++) {
+      await page.keyboard.press('Space');
+      await page.waitForTimeout(250);
+    }
+    await expect.poll(async () => (await state(page)).loopIndex).toBe(2);
+    // Natively the page would stop at the end of the document and stay at p = 0.
+    await expect.poll(async () => (await state(page)).p).toBeGreaterThan(0.1);
+  });
+
+  test('ArrowUp at the start wraps back to the end of the loop', async ({ page }) => {
+    await play(page);
+    await jumpTo(page, 0.005);
+    for (let i = 0; i < 4; i++) {
+      await page.keyboard.press('ArrowUp');
+      await page.waitForTimeout(150);
+    }
+    await expect.poll(async () => (await state(page)).p).toBeGreaterThan(0.9);
+    expect((await state(page)).loopIndex).toBe(1);
+  });
+
+  test('Cmd+ArrowDown and Cmd+ArrowUp act like End and Home', async ({ page }) => {
+    await play(page);
+    await jumpTo(page, 0.7);
+    await page.keyboard.press('Meta+ArrowDown');
+    await waitFrames(page, 5);
+    let s = await state(page);
+    expect(Math.abs(s.p - 0.7)).toBeLessThan(0.002);
+    expect(s.loopIndex).toBe(1);
+    await page.keyboard.press('Meta+ArrowUp');
+    await waitFrames(page, 5);
+    s = await state(page);
+    expect(s.p).toBeLessThan(0.01);
+    expect(s.loopIndex).toBe(1);
+  });
+
+  test('Tab focus never moves the story', async ({ page }) => {
+    await play(page);
+    await jumpTo(page, 0.7);
+    await page.keyboard.press('Tab');
+    await waitFrames(page, 5);
+    const s = await state(page);
+    expect(Math.abs(s.p - 0.7)).toBeLessThan(0.002);
+    expect(s.loopIndex).toBe(1);
+  });
+
   test('input before PLAY does not move the story', async ({ page }) => {
     await page.mouse.wheel(0, 1500);
     await waitFrames(page, 10);
