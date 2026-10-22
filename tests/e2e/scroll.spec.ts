@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { jumpTo, openExperience, play, state, waitFrames } from './helpers';
+import { jumpTo, openExperience, play, state, waitForScene, waitFrames } from './helpers';
 
 test.describe('infinite scroll', () => {
   test.beforeEach(async ({ page }) => {
@@ -46,8 +46,7 @@ test.describe('infinite scroll', () => {
     await play(page);
     await jumpTo(page, 0.5);
     await page.reload();
-    await page.waitForFunction(() => !!window.__experience);
-    await waitFrames(page, 3);
+    await waitForScene(page);
     const s = await state(page);
     expect(s.p).toBeLessThan(1e-6);
     expect(s.scrollY).toBe(0);

@@ -1,6 +1,6 @@
 import { PNG } from 'pngjs';
 import { describe, expect, it } from 'vitest';
-import { diffRatio, meanLuminance } from './image';
+import { brightRatio, diffRatio, meanLuminance } from './image';
 
 function png(pixels: [number, number, number, number][]): Buffer {
   const img = new PNG({ width: pixels.length, height: 1 });
@@ -23,6 +23,12 @@ describe('image utils', () => {
 
   it('diffRatio throws when sizes differ', () => {
     expect(() => diffRatio(png([[0, 0, 0, 255]]), png([[0, 0, 0, 255], [0, 0, 0, 255]]), 8)).toThrow();
+  });
+
+  it('brightRatio counts pixels brighter than the luma threshold', () => {
+    const img = png([[255, 255, 255, 255], [5, 6, 7, 255], [0, 0, 0, 255], [120, 120, 120, 255]]);
+    expect(brightRatio(img, 0.15)).toBe(0.5);
+    expect(brightRatio(img, 0.9)).toBe(0.25);
   });
 
   it('meanLuminance is 1 for white and 0 for black', () => {

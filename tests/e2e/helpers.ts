@@ -1,11 +1,19 @@
 import type { Locator, Page } from '@playwright/test';
 import type { ExperienceSnapshot } from '../../src/debug/testHook';
 
+/** Waits until the lazily loaded 3D scene exists and has rendered a few frames. */
+export async function waitForScene(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const s = window.__experience?.getState();
+    return !!s && s.sceneReady && s.frame > 2;
+  });
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+}
+
 /** Opens the site with the test hook only (no leva or stats in screenshots). */
 export async function openExperience(page: Page): Promise<void> {
   await page.goto('/?debug&quiet');
-  await page.waitForFunction(() => !!window.__experience);
-  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  await waitForScene(page);
 }
 
 export async function waitFrames(page: Page, n: number): Promise<void> {

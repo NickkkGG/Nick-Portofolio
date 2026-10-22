@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // The dev indicator would sit on top of the OSD timecode in screenshots.
+  devIndicators: false,
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {

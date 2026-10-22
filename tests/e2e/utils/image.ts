@@ -21,14 +21,25 @@ export function diffRatio(a: Buffer, b: Buffer, channelThreshold: number): numbe
   return differing / pixels;
 }
 
+function lumaAt(data: Buffer, pixel: number): number {
+  const o = pixel * 4;
+  return (0.2126 * data[o] + 0.7152 * data[o + 1] + 0.0722 * data[o + 2]) / 255;
+}
+
 /** Mean Rec.709 luma of an image, 0 (black) to 1 (white). Alpha is ignored. */
 export function meanLuminance(png: Buffer): number {
   const img = PNG.sync.read(png);
   const pixels = img.width * img.height;
   let sum = 0;
-  for (let i = 0; i < pixels; i++) {
-    const o = i * 4;
-    sum += (0.2126 * img.data[o] + 0.7152 * img.data[o + 1] + 0.0722 * img.data[o + 2]) / 255;
-  }
+  for (let i = 0; i < pixels; i++) sum += lumaAt(img.data, i);
   return sum / pixels;
+}
+
+/** Share of pixels whose luma is above `threshold` (0–1): "is anything clearly lit?". */
+export function brightRatio(png: Buffer, threshold: number): number {
+  const img = PNG.sync.read(png);
+  const pixels = img.width * img.height;
+  let bright = 0;
+  for (let i = 0; i < pixels; i++) if (lumaAt(img.data, i) > threshold) bright++;
+  return bright / pixels;
 }

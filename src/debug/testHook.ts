@@ -6,6 +6,7 @@ import { resolve } from '@/timeline/resolve';
 
 export interface ExperienceSnapshot {
   started: boolean;
+  sceneReady: boolean;
   p: number;
   loopIndex: number;
   chapterId: ChapterId;
@@ -48,6 +49,7 @@ export function createTestHook(): ExperienceTestHook {
       const { chapter, t } = resolve(s.p);
       return {
         started: s.started,
+        sceneReady: s.sceneReady,
         p: s.p,
         loopIndex: s.loopIndex,
         chapterId: chapter.id,
