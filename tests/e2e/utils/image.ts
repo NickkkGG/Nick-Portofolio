@@ -35,6 +35,69 @@ export function meanLuminance(png: Buffer): number {
   return sum / pixels;
 }
 
+/**
+ * Bounding box (as fractions of the frame) of pixels whose luma is above `threshold`,
+ * or null when nothing is that bright: "how big is the lit thing on screen?".
+ */
+export function brightBounds(
+  png: Buffer,
+  threshold: number,
+): { x: number; y: number; width: number; height: number } | null {
+  const img = PNG.sync.read(png);
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -1;
+  let maxY = -1;
+  for (let y = 0; y < img.height; y++) {
+    for (let x = 0; x < img.width; x++) {
+      if (lumaAt(img.data, y * img.width + x) <= threshold) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+  if (maxX < 0) return null;
+  return {
+    x: minX / img.width,
+    y: minY / img.height,
+    width: (maxX - minX + 1) / img.width,
+    height: (maxY - minY + 1) / img.height,
+  };
+}
+
+/**
+ * Share of `blockSize`² blocks whose mean luma is above `threshold`. Averaging first
+ * cancels per-pixel film grain, so only real image content counts. Blocks whose
+ * centre falls inside `exclude` (fractions of the frame) are left out.
+ */
+export function litBlockRatio(
+  png: Buffer,
+  blockSize: number,
+  threshold: number,
+  exclude?: { x: number; y: number; width: number; height: number },
+): number {
+  const img = PNG.sync.read(png);
+  let considered = 0;
+  let lit = 0;
+  for (let by = 0; by < img.height; by += blockSize) {
+    for (let bx = 0; bx < img.width; bx += blockSize) {
+      const w = Math.min(blockSize, img.width - bx);
+      const h = Math.min(blockSize, img.height - by);
+      const cx = (bx + w / 2) / img.width;
+      const cy = (by + h / 2) / img.height;
+      if (exclude && cx >= exclude.x && cx <= exclude.x + exclude.width && cy >= exclude.y && cy <= exclude.y + exclude.height) {
+        continue;
+      }
+      let sum = 0;
+      for (let y = by; y < by + h; y++) for (let x = bx; x < bx + w; x++) sum += lumaAt(img.data, y * img.width + x);
+      considered++;
+      if (sum / (w * h) > threshold) lit++;
+    }
+  }
+  return considered === 0 ? 0 : lit / considered;
+}
+
 /** Share of pixels whose luma is above `threshold` (0–1): "is anything clearly lit?". */
 export function brightRatio(png: Buffer, threshold: number): number {
   const img = PNG.sync.read(png);

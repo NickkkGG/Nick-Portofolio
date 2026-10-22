@@ -2,6 +2,9 @@
 
 import { Canvas } from '@react-three/fiber';
 import { DebugStats } from '@/debug/DebugStats';
+import { AtmosphereDriver } from './atmosphere/AtmosphereDriver';
+import { Backdrop } from './atmosphere/Backdrop';
+import { Particles } from './atmosphere/Particles';
 import { useExperience } from '@/store/useExperience';
 import { CameraRig } from './camera/CameraRig';
 import { Chapters } from './chapters/Chapters';
@@ -20,10 +23,13 @@ export default function Experience() {
       <color attach="background" args={['#050607']} />
       <fogExp2 attach="fog" args={['#050607', 0.015]} />
       <ambientLight intensity={0.04} />
-      {/* Mount order is useFrame order: clock, then camera, then chapters. */}
+      {/* Mount order is useFrame order: clock, then camera, then everything that follows it. */}
       <FrameClock />
       <CameraRig />
+      <AtmosphereDriver />
+      <Backdrop />
       <Chapters />
+      <Particles />
       <EffectsStack />
       <DebugStats />
     </Canvas>

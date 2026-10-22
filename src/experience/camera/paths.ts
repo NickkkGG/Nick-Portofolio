@@ -11,12 +11,13 @@ export interface CameraKeyframe {
   target: Vec3;
 }
 
-const ROOM_START: Pick<CameraKeyframe, 'position' | 'target'> = { position: [0.9, 1.5, 1.6], target: [0, 1.1, -1] };
+// Pulled back behind the character's right shoulder: desk, monitor, lamp and the
+// moonlit window all in frame, then the camera creeps in as the floor starts to give.
+const ROOM_START: Pick<CameraKeyframe, 'position' | 'target'> = { position: [1.6, 1.75, 2.6], target: [-0.25, 1, -1] };
 
-// Initial values from the milestone 1 plan; tunable later in debug mode.
 const BEFORE_SPIRAL: CameraKeyframe[] = [
   { p: 0, ...ROOM_START },
-  { p: 0.09, position: [0.5, 1.35, 0.9], target: [0, 0.9, -0.8] },
+  { p: 0.09, position: [0.75, 1.45, 1.35], target: [0, 0.9, -0.9] },
   { p: 0.1, position: [0.4, 1.3, 0.8], target: [0, 0.2, -0.4] },
   { p: 0.13, position: [0.3, -4, 0.5], target: [0, 2, 0] },
   { p: 0.21, position: [0.2, -30, 0.4], target: [0, -22, 0] },
@@ -31,8 +32,8 @@ const AFTER_SPIRAL: CameraKeyframe[] = [
   { p: 0.92, position: [0, -178.5, 7], target: [0, -178.8, 0] },
   // Teleport: both keyframes share p; the later one wins from LOOP_TELEPORT_P onwards.
   { p: LOOP_TELEPORT_P, position: [0, -215, 7], target: [0, -230, 0] },
-  { p: LOOP_TELEPORT_P, position: [0.9, 30, 1.6], target: [0, 0, -1] },
-  { p: 0.985, position: [0.9, 3.4, 1.6], target: [0, 0.6, -1] },
+  { p: LOOP_TELEPORT_P, position: [1.6, 30, 2.6], target: [-0.25, 0, -1] },
+  { p: 0.985, position: [1.6, 3.5, 2.6], target: [-0.25, 0.6, -1] },
   { p: 1, ...ROOM_START },
 ];
 

@@ -7,8 +7,13 @@ import type { Vec3 } from './types';
 const distance = (a: Vec3, b: Vec3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
 describe('camera paths', () => {
-  it('room start pose', () => {
-    expect(cameraPoseAt(0, 6)).toEqual({ position: [0.9, 1.5, 1.6], target: [0, 1.1, -1] });
+  it('room start pose is pulled back to show the whole desk corner', () => {
+    expect(cameraPoseAt(0, 6)).toEqual({ position: [1.6, 1.75, 2.6], target: [-0.25, 1, -1] });
+  });
+
+  it('the loop drops straight down onto the room start pose', () => {
+    const above = cameraPoseAt(LOOP_TELEPORT_P, 6).position;
+    expect([above[0], above[2]]).toEqual([1.6, 2.6]);
   });
 
   it('the loop seam is invisible to the camera', () => {

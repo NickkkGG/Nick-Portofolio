@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local dot-folders: execution notes and throwaway measuring scripts.
+    ".*/**",
   ]),
 ]);
 

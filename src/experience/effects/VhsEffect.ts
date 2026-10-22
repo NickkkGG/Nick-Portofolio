@@ -13,6 +13,7 @@ export class VhsEffect extends Effect {
         ['uTime', new Uniform(0)],
         ['uIntensity', new Uniform(VHS_BASE_DEFAULT)],
         ['uFade', new Uniform(0)],
+        ['uExposure', new Uniform(1)],
       ]),
     });
   }

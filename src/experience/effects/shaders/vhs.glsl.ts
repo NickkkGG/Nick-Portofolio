@@ -8,6 +8,13 @@ export const vhsFragment = /* glsl */ `
 uniform float uTime;
 uniform float uIntensity;
 uniform float uFade;
+uniform float uExposure;
+
+// Filmic tone curve (Narkowicz ACES fit): bright lamps and screens roll off softly
+// instead of clipping, and exposure lifts the dark rooms without flattening them.
+vec3 acesFilm(vec3 x) {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
+}
 
 float hash(vec2 p) {
   return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
@@ -56,14 +63,14 @@ void mainImage(const in vec4 inputColor, const in vec2 screenUv, out vec4 output
   for (int i = 0; i < 5; i++) {
     chroma += rgbToYiq(texture2D(inputBuffer, sampleUv - vec2(float(i) * spacing, 0.0)).rgb).yz;
   }
-  vec3 color = yiqToRgb(vec3(luma, chroma / 5.0));
+  vec3 color = acesFilm(max(yiqToRgb(vec3(luma, chroma / 5.0)), vec3(0.0)) * uExposure);
 
   color *= 1.0 - 0.08 * (0.5 + 0.5 * sin(uv.y * resolution.y * 3.14159265));
   // Grain goes on in display (gamma) space: added in linear space, the sRGB encode
   // would lift the blacks to a foggy grey.
-  vec3 display = pow(max(color, vec3(0.0)), vec3(1.0 / 2.2));
+  vec3 display = pow(max(color, vec3(1e-6)), vec3(1.0 / 2.2));
   display += (hash(uv * resolution + floor(uTime * 24.0)) - 0.5) * (0.04 + 0.06 * uIntensity);
-  color = pow(max(display, vec3(0.0)), vec3(2.2));
+  color = pow(max(display, vec3(1e-6)), vec3(2.2));
   color *= mix(1.0, 1.0 - smoothstep(0.25, 0.85, length(uv - 0.5)), 0.6);
   color = mix(color, vec3(0.0), uFade);
 

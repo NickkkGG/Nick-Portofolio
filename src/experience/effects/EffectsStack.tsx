@@ -2,6 +2,7 @@ import { useFrame } from '@react-three/fiber';
 import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import { useRef } from 'react';
 import { useExperience } from '@/store/useExperience';
+import { atmosphereAt } from '@/experience/atmosphere/atmosphere';
 import { fadeAt } from '@/timeline/loop';
 import { Vhs, type VhsEffect } from './VhsEffect';
 
@@ -15,6 +16,7 @@ export function EffectsStack() {
     effect.uniforms.get('uTime')!.value = time;
     effect.uniforms.get('uIntensity')!.value = Math.min(1, vhsBase + vhsSpike * (1 - vhsBase));
     effect.uniforms.get('uFade')!.value = fadeAt(p);
+    effect.uniforms.get('uExposure')!.value = atmosphereAt(p).exposure;
   });
 
   // One pass per effect, in this order. Merged into one pass, postprocessing sorts the
