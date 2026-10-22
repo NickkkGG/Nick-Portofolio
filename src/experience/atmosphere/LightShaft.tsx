@@ -1,6 +1,6 @@
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
-import { AdditiveBlending, Color, CylinderGeometry, DoubleSide, type Mesh, type ShaderMaterial, Quaternion, Vector3 } from 'three';
+import { AdditiveBlending, Color, CylinderGeometry, DoubleSide, type Mesh, type ShaderMaterial, Quaternion, Vector2, Vector3 } from 'three';
 import type { Vec3 } from '@/experience/camera/types';
 import { useChapterFrame } from '@/experience/chapters/useChapterFrame';
 import { useExperience } from '@/store/useExperience';
@@ -19,6 +19,8 @@ export interface LightShaftProps {
   intensity: number;
   /** Optional per-frame intensity, e.g. to follow a flickering bulb. */
   intensityAt?: (p: number) => number;
+  /** Metres from the lens over which the beam fades in, so flying through it never whites out the frame. */
+  nearFade?: [number, number];
 }
 
 const vertexShader = /* glsl */ `
@@ -26,11 +28,13 @@ uniform float uLength;
 varying float vAlong;
 varying float vAngle;
 varying float vFacing;
+varying float vDepth;
 
 void main() {
   vAlong = -position.y / uLength;
   vAngle = atan(position.z, position.x);
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  vDepth = -mv.z;
   vec3 n = normalize(normalMatrix * normal);
   vFacing = abs(dot(n, normalize(-mv.xyz)));
   gl_Position = projectionMatrix * mv;
@@ -43,9 +47,11 @@ const fragmentShader = /* glsl */ `
 uniform vec3 uColor;
 uniform float uIntensity;
 uniform float uTime;
+uniform vec2 uNearFade;
 varying float vAlong;
 varying float vAngle;
 varying float vFacing;
+varying float vDepth;
 
 void main() {
   // pow() of a non-positive base is undefined; interpolation can dip just below zero,
@@ -53,12 +59,24 @@ void main() {
   float along = pow(clamp(1.0 - vAlong, 1e-4, 1.0), 1.3);
   float edges = pow(clamp(vFacing, 1e-4, 1.0), 1.6);
   float streaks = 0.75 + 0.25 * sin(vAngle * 11.0 + uTime * 0.35) * sin(vAngle * 5.0 - uTime * 0.2 + vAlong * 3.0);
-  gl_FragColor = vec4(uColor, uIntensity * along * edges * streaks);
+  float near = smoothstep(uNearFade.x, uNearFade.y, vDepth);
+  gl_FragColor = vec4(uColor, uIntensity * along * edges * streaks * near);
 }
 `;
 
 /** A fake volumetric beam: an open cone with additive, soft-edged light. */
-export function LightShaft({ group, from, toward, length, radiusStart, radiusEnd, color, intensity, intensityAt }: LightShaftProps) {
+export function LightShaft({
+  group,
+  from,
+  toward,
+  length,
+  radiusStart,
+  radiusEnd,
+  color,
+  intensity,
+  intensityAt,
+  nearFade = [0.2, 1],
+}: LightShaftProps) {
   const ref = useRef<Mesh>(null);
   const material = useRef<ShaderMaterial>(null);
   useChapterFrame(group, ref);
@@ -83,6 +101,7 @@ export function LightShaft({ group, from, toward, length, radiusStart, radiusEnd
         uIntensity: { value: intensity },
         uLength: { value: length },
         uTime: { value: 0 },
+        uNearFade: { value: new Vector2(...nearFade) },
       },
       transparent: true,
       depthWrite: false,

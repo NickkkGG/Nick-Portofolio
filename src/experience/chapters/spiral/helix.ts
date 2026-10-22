@@ -25,20 +25,29 @@ export function helixSlots(count: number): HelixSlot[] {
   });
 }
 
+/**
+ * Spiral-local t of the first and the last monitor. The last one sits short of the
+ * chapter's end, so the camera has left it before the next chapter takes over.
+ */
+const SLOTS_T = { first: 0.1, last: 0.9 } as const;
+const SLOTS_SPAN = SLOTS_T.last - SLOTS_T.first;
+
 /** Spiral-local t at which the camera sits right in front of monitor `index`. */
 export function slotKeyframeT(index: number, count: number): number {
-  return count <= 1 ? 0.1 : 0.1 + (0.9 * index) / (count - 1);
+  return count <= 1 ? SLOTS_T.first : SLOTS_T.first + (SLOTS_SPAN * index) / (count - 1);
 }
+
+/** How far along the row of monitors spiral-local t is, in monitor indices. */
+const alongSlots = (t: number, count: number) => clamp01((t - SLOTS_T.first) / SLOTS_SPAN) * (count - 1);
 
 /** 1 while the camera is parked in front of monitor `index`, easing to 0 by the next monitor. */
 export function monitorFocus(t: number, index: number, count: number): number {
   if (count <= 1) return 1;
-  const along = clamp01((t - 0.1) / 0.9) * (count - 1);
-  return 1 - smoothstep(0, 1, Math.abs(along - index));
+  return 1 - smoothstep(0, 1, Math.abs(alongSlots(t, count) - index));
 }
 
 /** The monitor the camera is closest to at spiral-local t. */
 export function focusedIndex(t: number, count: number): number {
   if (count <= 1) return 0;
-  return Math.round(clamp01((t - 0.1) / 0.9) * (count - 1));
+  return Math.round(alongSlots(t, count));
 }

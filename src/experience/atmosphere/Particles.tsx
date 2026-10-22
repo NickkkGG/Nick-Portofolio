@@ -5,7 +5,7 @@ const FIELDS: (ParticleFieldProps & { name: string })[] = [
   {
     name: 'room-dust',
     group: 'room',
-    count: 1200,
+    count: 500,
     seed: 11,
     min: [-2.8, 0.05, -2.8],
     max: [2.8, 2.9, 2.8],
@@ -13,7 +13,7 @@ const FIELDS: (ParticleFieldProps & { name: string })[] = [
     size: 0.01,
     drift: [0.01, 0.006, -0.004],
     sway: 0.05,
-    opacity: 0.7,
+    opacity: 0.55,
     twinkle: 0.5,
     brightness: 1.6,
   },
@@ -63,7 +63,7 @@ const FIELDS: (ParticleFieldProps & { name: string })[] = [
   {
     name: 'problem-sparks',
     group: 'problem',
-    count: 900,
+    count: 500,
     seed: 15,
     min: [-7, -183, -7],
     max: [7, -170, 7],
@@ -78,7 +78,7 @@ const FIELDS: (ParticleFieldProps & { name: string })[] = [
   {
     name: 'depths-moths',
     group: 'depths',
-    count: 700,
+    count: 400,
     seed: 16,
     min: [-4, -181, -4],
     max: [4, -174, 4],

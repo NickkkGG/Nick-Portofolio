@@ -45,6 +45,22 @@ describe('experience store', () => {
     expect(store().frame).toBe(2);
   });
 
+  it('scrolling into the fall glitches the tape hard, other chapter changes a little', () => {
+    store().setScroll(0.099);
+    store().setScroll(0.101);
+    expect(store().vhsSpike).toBe(0.9);
+    useExperience.setState({ vhsSpike: 0 });
+    store().setScroll(0.259);
+    store().setScroll(0.261);
+    expect(store().vhsSpike).toBe(0.35);
+  });
+
+  it('programmatic jumps across chapters do not glitch', () => {
+    store().setScroll(0.05, { programmatic: true });
+    store().setScroll(0.4, { programmatic: true });
+    expect(store().vhsSpike).toBe(0);
+  });
+
   it('setScroll wraps p', () => {
     store().setScroll(1.02);
     expect(store().p).toBeCloseTo(0.02);

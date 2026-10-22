@@ -4,6 +4,7 @@ import type { CameraPose } from '@/experience/camera/types';
 import type { ScrollApi } from '@/scroll/types';
 import { nextLoopIndex } from '@/timeline/loop';
 import { wrapProgress } from '@/timeline/resolve';
+import { boundarySpike } from '@/timeline/transitions';
 
 export const VHS_BASE_DEFAULT = 0.22;
 
@@ -62,10 +63,13 @@ export const useExperience = create<ExperienceState>()(
       const { p: prevP, loopIndex, vhsSpike } = get();
       const next = wrapProgress(p);
       const nextLoop = opts?.programmatic ? loopIndex : nextLoopIndex(prevP, next, loopIndex);
+      // Jumps (nav, tests) cut cleanly; only the visitor's own scrolling chews the tape.
+      const chapterSpike = opts?.programmatic ? 0 : boundarySpike(prevP, next);
+      const loopSpike = nextLoop !== loopIndex ? 0.6 : 0;
       set({
         p: next,
         loopIndex: nextLoop,
-        vhsSpike: nextLoop !== loopIndex ? Math.max(vhsSpike, 0.6) : vhsSpike,
+        vhsSpike: Math.max(vhsSpike, chapterSpike, loopSpike),
       });
     },
     tick: (delta) => {

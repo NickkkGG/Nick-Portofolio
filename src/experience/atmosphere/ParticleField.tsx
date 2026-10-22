@@ -2,7 +2,9 @@ import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, type Points, type ShaderMaterial, Vector3 } from 'three';
 import { useChapterFrame } from '@/experience/chapters/useChapterFrame';
+import { focusDistance } from '@/experience/camera/paths';
 import type { Vec3 } from '@/experience/camera/types';
+import { LENS } from '@/experience/effects/lens';
 import { mulberry32 } from '@/lib/random';
 import { useExperience } from '@/store/useExperience';
 import type { VisibilityGroup } from '@/timeline/visibility';
@@ -37,8 +39,11 @@ uniform float uPointSize;
 uniform float uViewportHeight;
 uniform float uOpacity;
 uniform float uTwinkle;
+uniform float uFocus;
+uniform float uAperture;
 attribute float aSeed;
 varying float vAlpha;
+varying float vDisc;
 
 void main() {
   vec3 local = fract(position + uDrift * uTime / uSize);
@@ -51,10 +56,16 @@ void main() {
   vec4 mv = modelViewMatrix * vec4(world, 1.0);
   gl_Position = projectionMatrix * mv;
   float dist = max(-mv.z, 0.05);
-  gl_PointSize = min(256.0, uPointSize * (0.5 + aSeed) * projectionMatrix[1][1] * uViewportHeight * 0.5 / dist);
+  float sharp = uPointSize * (0.5 + aSeed) * projectionMatrix[1][1] * uViewportHeight * 0.5 / dist;
+  // Thin-lens circle of confusion: out of the focus plane a mote opens into a soft disc,
+  // biggest right in front of the lens.
+  float coc = uAperture * uViewportHeight * abs(1.0 / dist - 1.0 / uFocus);
+  float size = max(sharp + coc, 1e-3);
+  gl_PointSize = min(256.0, size);
+  vDisc = clamp(coc / size, 0.0, 1.0);
   float blink = 1.0 - uTwinkle * (0.5 + 0.5 * sin(uTime * (0.8 + aSeed * 2.5) + aSeed * 40.0));
-  // Fade out far away (fog) and right in front of the lens.
-  vAlpha = uOpacity * blink * (1.0 - smoothstep(25.0, 80.0, dist)) * smoothstep(0.05, 0.5, dist);
+  // Fade out far away (fog) and right in front of the lens; a wide disc spreads its light thinner.
+  vAlpha = uOpacity * blink * (1.0 - smoothstep(25.0, 80.0, dist)) * smoothstep(0.05, 0.5, dist) * pow(clamp(sharp / size, 1e-4, 1.0), 1.5);
 }
 `;
 
@@ -62,11 +73,15 @@ const fragmentShader = /* glsl */ `
 uniform vec3 uColor;
 uniform float uBrightness;
 varying float vAlpha;
+varying float vDisc;
 
 void main() {
   float d = length(gl_PointCoord - 0.5);
-  float a = 1.0 - smoothstep(0.0, 0.5, d);
-  gl_FragColor = vec4(uColor * uBrightness, a * a * vAlpha);
+  // In focus: a soft glowing speck. Out of focus: a flat bokeh disc with a faint rim.
+  float speck = 1.0 - smoothstep(0.0, 0.5, d);
+  float disc = (1.0 - smoothstep(0.4, 0.5, d)) * (0.7 + 0.3 * smoothstep(0.25, 0.45, d));
+  float a = mix(speck * speck, disc, vDisc);
+  gl_FragColor = vec4(uColor * uBrightness, a * vAlpha);
 }
 `;
 
@@ -119,6 +134,8 @@ export function ParticleField({
         uViewportHeight: { value: 720 },
         uOpacity: { value: opacity },
         uTwinkle: { value: twinkle },
+        uFocus: { value: 4 },
+        uAperture: { value: LENS.aperture },
         uColor: { value: new Color(color) },
         uBrightness: { value: brightness },
       },
@@ -134,8 +151,10 @@ export function ParticleField({
   useFrame(({ gl, size: viewport }) => {
     const shader = material.current;
     if (!shader) return;
-    shader.uniforms.uTime.value = useExperience.getState().time;
+    const { time, cameraPose } = useExperience.getState();
+    shader.uniforms.uTime.value = time;
     shader.uniforms.uViewportHeight.value = viewport.height * gl.getPixelRatio();
+    if (cameraPose) shader.uniforms.uFocus.value = focusDistance(cameraPose);
   });
 
   return (

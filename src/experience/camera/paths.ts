@@ -34,6 +34,8 @@ const AFTER_SPIRAL: CameraKeyframe[] = [
   { p: LOOP_TELEPORT_P, position: [0, -215, 7], target: [0, -230, 0] },
   { p: LOOP_TELEPORT_P, position: [1.6, 30, 2.6], target: [-0.25, 0, -1] },
   { p: 0.985, position: [1.6, 3.5, 2.6], target: [-0.25, 0.6, -1] },
+  // Land a moment before the wrap and hold still, so the seam falls on a settled frame.
+  { p: 0.996, ...ROOM_START },
   { p: 1, ...ROOM_START },
 ];
 
@@ -47,7 +49,7 @@ export function buildKeyframes(projectCount: number): CameraKeyframe[] {
   const viewRadius = SPIRAL.radius + SPIRAL.cameraDistance;
   // The camera parks in front of each monitor, then moves quickly to the next one;
   // between monitors nothing would be in frame (they sit 14 m and 90° apart).
-  const interval = projectCount > 1 ? (span * 0.9) / (projectCount - 1) : 0;
+  const interval = projectCount > 1 ? span * (slotKeyframeT(1, projectCount) - slotKeyframeT(0, projectCount)) : 0;
   const hold = Math.min(0.3 * interval, 0.02);
   const slots: CameraKeyframe[] = helixSlots(projectCount).flatMap((slot, i) => {
     const p = spiral.start + span * slotKeyframeT(i, projectCount);
@@ -76,4 +78,11 @@ export function cameraPoseAt(p: number, projectCount: number): CameraPose {
   const to = keyframes[index + 1];
   const e = smoothstep(from.p, to.p, x);
   return { position: mix(from.position, to.position, e), target: mix(from.target, to.target, e) };
+}
+
+/** How far the lens focuses: on whatever the camera looks at, never closer than half a metre. */
+export function focusDistance(pose: CameraPose): number {
+  const [x, y, z] = pose.position;
+  const [tx, ty, tz] = pose.target;
+  return Math.max(0.5, Math.hypot(tx - x, ty - y, tz - z));
 }
