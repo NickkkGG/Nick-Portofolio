@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-ink: #050607;
+  --color-shadow: #0f2a2a;
+  --color-lamp: #ffb35c;
+  --color-alarm: #ff2a2a;
+  --color-screen: #cfe8ff;
+  --color-osd: #e8e6d9;
+  --font-osd: var(--font-vt323);
+  --font-body: var(--font-plex);
+}
+
+html,
+body {
+  background: #050607;
+  color: #e8e6d9;
+}
+
+html {
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+}
