@@ -1,6 +1,7 @@
 'use client';
 
 import { Canvas } from '@react-three/fiber';
+import { DebugStats } from '@/debug/DebugStats';
 import { useExperience } from '@/store/useExperience';
 import { CameraRig } from './camera/CameraRig';
 import { Chapters } from './chapters/Chapters';
@@ -24,6 +25,7 @@ export default function Experience() {
       <CameraRig />
       <Chapters />
       <EffectsStack />
+      <DebugStats />
     </Canvas>
   );
 }

@@ -1,8 +1,13 @@
 'use client';
 
+import dynamic from 'next/dynamic';
+import { useDebugMode } from '@/debug/useDebugMode';
 import { ChapterTexts } from './ChapterTexts';
 import { Loader } from './Loader';
 import { Osd } from './Osd';
+
+// leva only ever loads in the browser, and only for ?debug.
+const DebugPanel = dynamic(() => import('@/debug/DebugPanel'), { ssr: false });
 
 /**
  * Fixed HTML layer above the canvas. It ignores the pointer; interactive children
@@ -10,11 +15,17 @@ import { Osd } from './Osd';
  * so tests can mask them without masking the whole screen.
  */
 export function Overlay() {
+  const debugMode = useDebugMode();
   return (
     <div data-testid="overlay" className="pointer-events-none fixed inset-0 z-10">
       <ChapterTexts />
       <Osd />
       <Loader />
+      {debugMode === 'full' && (
+        <div className="pointer-events-auto">
+          <DebugPanel />
+        </div>
+      )}
     </div>
   );
 }
