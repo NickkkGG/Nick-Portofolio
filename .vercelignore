@@ -1,0 +1,7 @@
+# Only the app is deployed; tests, docs and local artifacts stay on this machine.
+docs
+tests
+test-results
+playwright-report
+coverage
+*.webm
