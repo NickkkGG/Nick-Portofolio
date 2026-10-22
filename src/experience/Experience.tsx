@@ -4,6 +4,7 @@ import { Canvas } from '@react-three/fiber';
 import { useExperience } from '@/store/useExperience';
 import { CameraRig } from './camera/CameraRig';
 import { Chapters } from './chapters/Chapters';
+import { EffectsStack } from './effects/EffectsStack';
 import { FrameClock } from './FrameClock';
 
 export default function Experience() {
@@ -22,6 +23,7 @@ export default function Experience() {
       <FrameClock />
       <CameraRig />
       <Chapters />
+      <EffectsStack />
     </Canvas>
   );
 }
