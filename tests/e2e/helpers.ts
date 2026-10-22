@@ -39,8 +39,11 @@ export async function state(page: Page): Promise<ExperienceSnapshot> {
   return page.evaluate(() => window.__experience!.getState());
 }
 
-/** Screenshot; `maskOverlay` paints the HTML overlay black so only the 3D image counts. */
+/**
+ * Screenshot; `maskOverlay` paints every visible UI piece black so only the 3D image
+ * counts. It masks the pieces (data-overlay-item), not the full-screen overlay layer.
+ */
 export async function shot(page: Page, opts: { maskOverlay?: boolean; mask?: Locator[] } = {}): Promise<Buffer> {
-  const mask = [...(opts.mask ?? []), ...(opts.maskOverlay ? [page.getByTestId('overlay')] : [])];
+  const mask = [...(opts.mask ?? []), ...(opts.maskOverlay ? [page.locator('[data-overlay-item]')] : [])];
   return page.screenshot({ mask, maskColor: '#000000' });
 }
