@@ -37,6 +37,19 @@ describe('camera paths', () => {
     expect(cameraPoseAt(LOOP_TELEPORT_P, 6).position[1]).toBeCloseTo(30);
   });
 
+  it('the camera holds still in front of each monitor', () => {
+    const interval = (0.3 * 0.9) / 5; // p between two of six monitors
+    for (let i = 0; i < 6; i++) {
+      const at = 0.26 + 0.3 * slotKeyframeT(i, 6);
+      const parked = cameraPoseAt(at, 6);
+      for (const offset of [-0.25 * interval, 0.25 * interval]) {
+        const near = cameraPoseAt(at + offset, 6);
+        expect(distance(near.position, parked.position), `slot ${i} offset ${offset}`).toBeLessThan(1e-9);
+        expect(distance(near.target, parked.target), `slot ${i} offset ${offset}`).toBeLessThan(1e-9);
+      }
+    }
+  });
+
   it('each slot keyframe looks at its monitor', () => {
     const slots = helixSlots(6);
     slots.forEach((slot, i) => {

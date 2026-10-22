@@ -42,12 +42,20 @@ export function buildKeyframes(projectCount: number): CameraKeyframe[] {
   const cached = cache.get(projectCount);
   if (cached) return cached;
   const spiral = getChapter('spiral');
+  const span = spiral.end - spiral.start;
   const viewRadius = SPIRAL.radius + SPIRAL.cameraDistance;
-  const slots: CameraKeyframe[] = helixSlots(projectCount).map((slot, i) => ({
-    p: spiral.start + (spiral.end - spiral.start) * slotKeyframeT(i, projectCount),
-    position: [viewRadius * Math.sin(slot.angle), slot.position[1] + SPIRAL.cameraLift, viewRadius * Math.cos(slot.angle)],
-    target: slot.position,
-  }));
+  // The camera parks in front of each monitor, then moves quickly to the next one;
+  // between monitors nothing would be in frame (they sit 14 m and 90° apart).
+  const interval = projectCount > 1 ? (span * 0.9) / (projectCount - 1) : 0;
+  const hold = Math.min(0.3 * interval, 0.02);
+  const slots: CameraKeyframe[] = helixSlots(projectCount).flatMap((slot, i) => {
+    const p = spiral.start + span * slotKeyframeT(i, projectCount);
+    const pose: Pick<CameraKeyframe, 'position' | 'target'> = {
+      position: [viewRadius * Math.sin(slot.angle), slot.position[1] + SPIRAL.cameraLift, viewRadius * Math.cos(slot.angle)],
+      target: slot.position,
+    };
+    return hold > 0 ? [{ p: p - hold, ...pose }, { p: p + hold, ...pose }] : [{ p, ...pose }];
+  });
   const keyframes = [...BEFORE_SPIRAL, ...slots, ...AFTER_SPIRAL];
   cache.set(projectCount, keyframes);
   return keyframes;
