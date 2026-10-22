@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, VT323 } from "next/font/google";
 import "lenis/dist/lenis.css";
+import { content } from "@/content";
 import "./globals.css";
 
 const vt323 = VT323({
@@ -16,8 +17,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Portfolio",
-  description: "Analog horror 3D portfolio",
+  title: `${content.site.name} — ${content.site.role}`,
+  description: content.about.headline,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

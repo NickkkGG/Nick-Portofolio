@@ -1,0 +1,56 @@
+import { content } from '@/content';
+
+/**
+ * All site content as plain semantic HTML, rendered on the server: readable by
+ * search engines and screen readers while the 3D story runs (spec §4.3).
+ */
+export function ContentDocument() {
+  const { site, projects, about, stack, contact } = content;
+  return (
+    <div data-testid="content-document" className="sr-only">
+      <h1>
+        {site.name} — {site.role}
+      </h1>
+      <section>
+        <h2>Work</h2>
+        <ul>
+          {projects.map((project) => (
+            <li key={project.slug}>
+              <h3>{project.title}</h3>
+              {project.summary && <p>{project.summary}</p>}
+              {project.link && <a href={project.link}>{project.title}</a>}
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section>
+        <h2>About</h2>
+        <p>{about.headline}</p>
+        {about.paragraphs.map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
+      </section>
+      <section>
+        <h2>Stack</h2>
+        <ul>
+          {stack.map((item) => (
+            <li key={item.name}>
+              {item.name} — {item.category}
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section>
+        <h2>Contact</h2>
+        <p>{site.tagline}</p>
+        <ul>
+          {contact.map((link) => (
+            <li key={link.label}>
+              <a href={link.href}>{link.label}</a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  );
+}

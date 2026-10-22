@@ -1,5 +1,6 @@
 'use client';
 
+import { ChapterTexts } from './ChapterTexts';
 import { Loader } from './Loader';
 import { Osd } from './Osd';
 
@@ -11,6 +12,7 @@ import { Osd } from './Osd';
 export function Overlay() {
   return (
     <div data-testid="overlay" className="pointer-events-none fixed inset-0 z-10">
+      <ChapterTexts />
       <Osd />
       <Loader />
     </div>
