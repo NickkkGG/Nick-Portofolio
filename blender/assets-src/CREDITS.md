@@ -34,6 +34,27 @@ Script itu membaca `textures.json` (URL dan ukuran tiap file).
 | Leaking 007 | https://ambientcg.com/a/Leaking007 | noda lembap di dinding |
 | Leaking 008 | https://ambientcg.com/a/Leaking008 | noda lembap di dinding |
 
+## MakeHuman (karakter)
+
+Karakternya dibuat dengan **MPFB 2** (https://extensions.blender.org/add-ons/mpfb/, GPL-3.0-or-later). MPFB hanya dipakai sebagai alat di Blender, kodenya tidak ikut ke website. Semua aset di bawah ini berasal dari paket **MakeHuman system assets**, berlisensi **CC0** (https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html). Rig `game_engine` dan bobotnya ikut terpasang bersama MPFB, juga CC0.
+
+File aslinya tidak ikut masuk git. Download ulang dengan:
+
+```bash
+python3 -I blender/scripts/fetch_character.py
+```
+
+| Aset | Dipakai untuk |
+|---|---|
+| `young_asian_male` (skin) | kulit dan wajah |
+| `male1591` (proxymesh) | badan low-poly |
+| `low-poly` (eyes) + `brown` | mata; irisnya digelapkan jadi coklat tua |
+| `eyebrow001`, `eyelashes01` | alis, bulu mata |
+| `short01` (hair) | rambut |
+| `male_casualsuit02` (clothes) | sweatshirt: kaos lengan panjang diwarnai charcoal, sablon dan stripnya dihapus. Jeans dibuat lebih gelap |
+| `shoes05` (clothes) | sneakers |
+| rig `game_engine` + bobot | tulang dan skinning |
+
 ## Dibuat sendiri
 
 Gambar berikut dibuat oleh script di `blender/scripts/art.py`, bukan diambil dari mana pun:
@@ -41,5 +62,6 @@ Gambar berikut dibuat oleh script di `blender/scripts/art.py`, bukan diambil dar
 - jaring laba-laba
 - coretan di sticky note dan label kaset VHS
 - sampul dan punggung 16 buku dengan judul karangan sendiri (font Inter dan DejaVu Sans Mono bawaan Blender, keduanya berlisensi bebas)
+- bagian karakter di luar MakeHuman (`blender/scripts/character.py`): hood yang terlipat di leher, tali hoodie, headphone dengan kabel spiral, dan semua pose
 
 Di web, beberapa gambar juga digambar langsung di canvas, tanpa file: legenda keycap, pesan error di jendela problem, dan label tulisan tangan di kaset (font tulisan tangan bawaan sistem). Transisi kaca antar bab memakai ulang `crt-smudge.webp` (dari Fingerprints 002).

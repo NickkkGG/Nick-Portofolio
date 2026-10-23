@@ -16,10 +16,12 @@ import {
 import { MODELS, useModel } from '@/experience/assets';
 import { LightShaft } from '@/experience/atmosphere/LightShaft';
 import { surgeLevel } from '@/experience/chapters/spiral/motion';
+import { Character } from '@/experience/character/Character';
+import { depthsMix } from '@/experience/character/poses';
 import { createStaticScreens } from '@/experience/materials/staticScreens';
 import { useExperience } from '@/store/useExperience';
 import { useChapterFrame } from '../useChapterFrame';
-import { BULB_Y, bulbDrop, bulbIntensity, characterPose, dripRipples, FLOOR_Y, SEAT_TOP } from './choreography';
+import { BULB_Y, bulbDrop, bulbIntensity, dripRipples, FLOOR_Y, SEAT_TOP } from './choreography';
 import { WetFloor } from './wetFloor';
 
 const WIRE = 6;
@@ -131,7 +133,6 @@ export function Depths() {
   const lamp = useRef<Group>(null);
   const light = useRef<PointLight>(null);
   const hemi = useRef<HemisphereLight>(null);
-  const character = useRef<Mesh>(null);
   const { scene } = useModel(MODELS.depths);
   const kit = useMemo(() => new DepthsKit(scene), [scene]);
   useEffect(() => () => kit.dispose(), [kit]);
@@ -152,11 +153,6 @@ export function Depths() {
       // The dark around is red with the problems, warm once the bulb is lit.
       hemi.current.color.lerpColors(AIR_DARK.sky, AIR_LIT.sky, lit);
       hemi.current.groundColor.lerpColors(AIR_DARK.ground, AIR_LIT.ground, lit);
-    }
-    if (character.current) {
-      const { position, lean } = characterPose(p);
-      character.current.position.set(...position);
-      character.current.rotation.set(lean, 0, 0);
     }
   });
 
@@ -184,11 +180,14 @@ export function Depths() {
         <planeGeometry args={[1.6, 1.6]} />
         <meshBasicMaterial map={kit.shadow} transparent depthWrite={false} color="#000000" />
       </mesh>
-      {/* TEMPORARY placeholder — the character arrives in milestone 2 */}
-      <mesh ref={character}>
-        <capsuleGeometry args={[0.2, 0.55, 6, 12]} />
-        <meshStandardMaterial color="#2a2a2e" roughness={0.9} />
-      </mesh>
+      {/* Hunched on the dead TV, up with the idea, among the tapes after (character/poses.ts). */}
+      <Character
+        position={[0, FLOOR_Y, 0]}
+        pose={() => {
+          const { p, time } = useExperience.getState();
+          return depthsMix(p, time);
+        }}
+      />
       {/* Everything below hangs from the top of the cord, so it swings as one. */}
       <group ref={lamp} position={[0, BULB_Y + WIRE, 0]}>
         <group position={[0, -WIRE, 0]}>

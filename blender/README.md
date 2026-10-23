@@ -47,6 +47,32 @@ npm run textures                                       # lalu semua teksturnya j
 
 Decoder Draco di-host sendiri di `public/draco/` (disalin dari `three/examples/jsm/libs/draco/gltf/`).
 
+## Membangun ulang karakter
+
+Karakternya manusia MakeHuman yang dirakit dengan add-on MPFB 2 lewat script (aset CC0, lihat `assets-src/CREDITS.md`), lalu diberi baju, headphone, dan pose buatan sendiri:
+
+```bash
+python3 -I blender/scripts/fetch_character.py   # sekali saja: MPFB (46 MB) + MakeHuman system assets (281 MB)
+blender/build_character.sh                      # model → rig → pose → GLB → preview → KTX2
+```
+
+MPFB dipasang ke folder Blender khusus proyek ini (`assets-src/character/blender-user`, lewat `BLENDER_USER_RESOURCES`), jadi Blender milikmu sendiri tidak berubah. Build pertama juga mengekstrak paket aset ke sana.
+
+| File | Isi |
+|---|---|
+| `public/models/character.glb` | Karakter low-poly (sekitar 19 ribu segitiga) dengan rig 53 tulang dan lima animasi: `Stand`, `SitType`, `Fall`, `SitHunched`, `StandUp` |
+| `blender/previews/character-*.png` | Render tiap pose dari depan dan belakang, plus wajah |
+
+Yang dibuat `scripts/character.py` di atas aset MakeHuman:
+
+- **Sweatshirt:** kaosnya diwarnai charcoal, tapi rajutan dan lipatan dari foto aslinya tetap ada.
+- **Jeans:** dibuat lebih gelap.
+- **Mata:** iris "brown" bawaan MakeHuman kemerahan, jadi dibuat coklat tua.
+- **Tambahan:** hood yang terlipat di leher, tali hoodie, dan headphone dengan kabel spiral.
+- **Pose:** dihitung dari arah tulang, IK lengan dan kaki, arah telapak tangan, dan tekukan jari, lalu disimpan sebagai aksi.
+
+Web memadukan aksi-aksi itu per bab dari posisi scroll (`src/experience/character/poses.ts`).
+
 ## Kompres tekstur (KTX2)
 
 Blender mengekspor tekstur sebagai WebP. File WebP kecil, tapi di GPU tiap pixel tetap makan 4 byte, dan browser juga menyimpan salinan hasil decode-nya di RAM. Total semua bab tadinya sekitar 2 GB. Kalau Mac kekurangan RAM, macOS mengompres tekstur bab yang lama tidak dipakai, lalu frame pertama yang memakainya lagi tersendat.
@@ -78,6 +104,9 @@ Transcoder Basis di-host sendiri di `public/basis/` (disalin dari `three/example
 | `scripts/crt.py` | CRT gantung → `crt.glb` |
 | `scripts/spiral.py` | Dunia project → `spiral.glb` |
 | `scripts/depths.py` | Dasar dan semua benda di bab About, Stack, Contact → `depths.glb` |
+| `scripts/fetch_character.py` | Python biasa: download MPFB dan MakeHuman system assets |
+| `scripts/character.py` | Karakter dari MakeHuman lewat MPFB, plus baju, headphone, dan pose → `character.glb` |
+| `scripts/character_preview.py` | Render tiap pose karakter → `blender/previews/character-*.png` |
 
 ## Kenapa lightmap-nya tiga
 

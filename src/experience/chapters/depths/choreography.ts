@@ -187,19 +187,3 @@ export function dripRipples(time: number): Ripple[] {
 export const FLOOR_Y = -180;
 /** A dead CRT lying on its side in the water is the character's seat: its top, metres. */
 export const SEAT_TOP = FLOOR_Y + 0.46;
-const SITTING: Vec3 = [0, SEAT_TOP + 0.45, 0];
-const STANDING: Vec3 = [0, FLOOR_Y + 0.475, 0.5];
-const HUNCH = 0.3;
-
-/**
- * Where the character is and how far it leans forward (radians): hunched on the dead TV
- * through the problems, getting up early in the stack chapter, standing from then on.
- */
-export function characterPose(p: number): { position: Vec3; lean: number } {
-  const { chapter, t } = resolve(p);
-  const up = chapter.id === 'stack' ? smoothstep(0.05, 0.45, t) : chapter.id === 'contact' || chapter.id === 'loop' ? 1 : 0;
-  return {
-    position: [lerp(SITTING[0], STANDING[0], up), lerp(SITTING[1], STANDING[1], up), lerp(SITTING[2], STANDING[2], up)],
-    lean: HUNCH * (1 - up),
-  };
-}

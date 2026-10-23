@@ -1,8 +1,12 @@
 import { useMemo, useRef } from 'react';
-import { AdditiveBlending, Group, type Mesh, type Object3D } from 'three';
+import { AdditiveBlending, Group, type Object3D, Vector3 } from 'three';
 import { content } from '@/content';
 import { LightShaft } from '@/experience/atmosphere/LightShaft';
 import { cameraPoseAt } from '@/experience/camera/paths';
+import { Character } from '@/experience/character/Character';
+import { fallMix } from '@/experience/character/poses';
+import { useExperience } from '@/store/useExperience';
+import { resolve } from '@/timeline/resolve';
 import { smoothstep } from '@/lib/math';
 import { mulberry32 } from '@/lib/random';
 import { MODELS, useModel } from '@/experience/assets';
@@ -76,20 +80,34 @@ const HOLE_GLOW = {
   blending: AdditiveBlending,
 };
 
+/** The character's pelvis above its feet at rest (the model's origin is between the feet). */
+const PELVIS = new Vector3(0, 0.86, 0);
+/** Lying on its back, the pelvis this far above what it lies on. */
+const BACK = 0.12;
+const pelvis = new Vector3();
+
+/**
+ * On its back, reaching for the hole, tumbling slowly, its pelvis on the point the camera
+ * looks at: first above the falling camera, then below it, until it lands on the pillar
+ * as the chapter ends. Shown from when the camera is through the floor until then.
+ */
+function placeFalling(figure: Group) {
+  const { p, time } = useExperience.getState();
+  const { chapter, t } = resolve(p);
+  figure.visible = chapter.id === 'fall' && t >= 0.15;
+  const [x, y, z] = cameraPoseAt(p, content.projects.length).target;
+  figure.rotation.set(-Math.PI / 2, 0.25 * time, 0, 'YXZ');
+  pelvis.copy(PELVIS).applyEuler(figure.rotation);
+  figure.position.set(x - pelvis.x, y + BACK - pelvis.y, z - pelvis.z);
+}
+
 /** The fall (spec §3.5): through the broken floor, the room's lamp glowing in the hole above, slab pieces raining down. */
 export function Fall() {
   const ref = useRef<Group>(null);
-  const character = useRef<Mesh>(null);
   const { scene } = useModel(MODELS.depths);
   const kit = useMemo(() => new FallKit(scene), [scene]);
 
-  useChapterFrame('fall', ref, (t, p) => {
-    kit.update(t);
-    if (character.current) {
-      character.current.visible = t >= 0.15;
-      character.current.position.set(...cameraPoseAt(p, content.projects.length).target);
-    }
-  });
+  useChapterFrame('fall', ref, (t) => kit.update(t));
 
   return (
     <group ref={ref}>
@@ -113,11 +131,7 @@ export function Fall() {
         nearFade={[2, 12]}
       />
       <primitive object={kit.root} />
-      {/* TEMPORARY placeholder — the character arrives in milestone 2 */}
-      <mesh ref={character} rotation={[-Math.PI / 2, 0, 0]}>
-        <capsuleGeometry args={[0.2, 0.55, 6, 12]} />
-        <meshStandardMaterial color="#2a2a2e" roughness={0.9} />
-      </mesh>
+      <Character pose={() => fallMix(useExperience.getState().time)} place={placeFalling} />
     </group>
   );
 }

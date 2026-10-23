@@ -7,14 +7,12 @@ import {
   CASSETTE_REACH,
   CASSETTE_WIDTH,
   cassettePose,
-  characterPose,
   dripRipples,
   keycapPose,
   keycapState,
   MAX_RIPPLES,
   problemPose,
   RIPPLE_LIFE,
-  SEAT_TOP,
   tapeLayout,
 } from './choreography';
 
@@ -189,22 +187,5 @@ describe('drips on the flooded floor', () => {
   it('land in different places', () => {
     const spots = new Set(Array.from({ length: 8 }, (_, k) => dripRipples(k * 1.9 + 0.05).map((r) => `${r.x.toFixed(2)},${r.z.toFixed(2)}`)[0]));
     expect(spots.size).toBeGreaterThan(5);
-  });
-});
-
-describe('the character down here', () => {
-  it('sits hunched on the dead TV through the problems', () => {
-    const { position, lean } = characterPose(at('problem', 0.5));
-    expect(lean).toBeGreaterThan(0.2);
-    expect(position[1] - 0.47).toBeGreaterThan(SEAT_TOP - 0.05);
-  });
-
-  it('gets up once the bulb is lit and stands on the floor for the tapes', () => {
-    expect(characterPose(at('stack', 0)).lean).toBeCloseTo(characterPose(at('problem', 0.99)).lean, 6);
-    const standing = characterPose(at('contact', 0.5));
-    expect(standing.lean).toBe(0);
-    expect(standing.position[1] - 0.475).toBeCloseTo(-180, 3);
-    expect(dist(characterPose(at('stack', 0.9)).position, standing.position)).toBeLessThan(1e-6);
-    expect(dist(characterPose(at('loop', 0.2)).position, standing.position)).toBeLessThan(1e-6);
   });
 });

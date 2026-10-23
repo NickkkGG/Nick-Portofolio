@@ -22,6 +22,8 @@ import { playKnock } from '@/audio/knock';
 import { MODELS, ROOM_LIGHTMAPS, useKtx2, useModel } from '@/experience/assets';
 import { LightShaft } from '@/experience/atmosphere/LightShaft';
 import type { Vec3 } from '@/experience/camera/types';
+import { Character } from '@/experience/character/Character';
+import { roomMix } from '@/experience/character/poses';
 import { lampLevel } from '@/experience/flicker';
 import { useExperience } from '@/store/useExperience';
 import { useChapterFrame } from '../useChapterFrame';
@@ -280,11 +282,8 @@ export function Room() {
       />
       <LightShaft group="room" from={[screen[0], screen[1], screen[2] + 0.02]} toward={[screen[0], screen[1] - 0.06, 0.6]} length={1.3} radiusStart={0.2} radiusEnd={0.62} color="#cfe8ff" intensity={0.06} />
 
-      {/* TEMPORARY placeholder — the character arrives in milestone 2 */}
-      <mesh position={[0, 1, 0.05]}>
-        <capsuleGeometry args={[0.2, 0.55, 6, 12]} />
-        <meshStandardMaterial color="#3a3a40" roughness={0.9} />
-      </mesh>
+      {/* At the desk, typing: on the chair (room.py), facing the monitor. */}
+      <Character position={[0, 0, 0.03]} rotation={[0, Math.PI, 0]} pose={() => roomMix(useExperience.getState().time)} />
     </group>
   );
 }

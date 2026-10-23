@@ -11,6 +11,7 @@ export const MODELS = {
   crt: '/models/crt.glb',
   spiral: '/models/spiral.glb',
   depths: '/models/depths.glb',
+  character: '/models/character.glb',
 } as const;
 
 /** The room's lightmaps, one per light source and atlas (blender/scripts/bake.py). */

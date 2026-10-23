@@ -17,9 +17,12 @@ import { content } from '@/content';
 import { channelLabel } from '@/content/schema';
 import { CRT_AO, MODELS, useKtx2, useModel } from '@/experience/assets';
 import { LightShaft } from '@/experience/atmosphere/LightShaft';
+import { Character } from '@/experience/character/Character';
+import { spiralMix } from '@/experience/character/poses';
 import { smoothstep } from '@/lib/math';
 import { mulberry32 } from '@/lib/random';
 import { useExperience } from '@/store/useExperience';
+import { resolve } from '@/timeline/resolve';
 import { isVisible } from '@/timeline/visibility';
 import { createStaticScreens } from '@/experience/materials/staticScreens';
 import { useChapterFrame } from '../useChapterFrame';
@@ -36,7 +39,6 @@ type Maps = Record<keyof typeof MAPS | keyof typeof CRT_AO, Texture>;
 
 const PROJECTS = content.projects;
 const SLOTS = helixSlots(PROJECTS.length);
-const STANDING_Y = SPIRAL.platformY + 0.475;
 
 /** Dim monitors hanging deeper in the dark, facing inward, so the far side has depth. */
 const BACKGROUND = (() => {
@@ -134,7 +136,6 @@ class SpiralKit {
 /** The project world (spec §3.6): the cable pillar, the hanging CRTs, the forest and the TV towers. */
 export function Spiral() {
   const ref = useRef<Group>(null);
-  const character = useRef<Mesh>(null);
   const glow = useRef<PointLight>(null);
   const glowSpots = useRef<(Object3D | null)[]>([]);
   const world = useModel(MODELS.spiral);
@@ -151,9 +152,6 @@ export function Spiral() {
   });
 
   useChapterFrame('spiral', ref, (t) => {
-    if (character.current) {
-      character.current.position.y = STANDING_Y + 9.5 * (1 - smoothstep(0, 0.1, t));
-    }
     // One light for all the project monitors, in front of the one the camera is at: they hang
     // 14 m and a quarter turn apart, so only that one's glow on the cables is ever in frame.
     // It dies away halfway to the next monitor, where it jumps over.
@@ -244,11 +242,15 @@ export function Spiral() {
           />
         ))}
 
-        {/* TEMPORARY placeholder — the character arrives in milestone 2 */}
-        <mesh ref={character} position={[0.6, STANDING_Y, 0.6]}>
-          <capsuleGeometry args={[0.2, 0.55, 6, 12]} />
-          <meshStandardMaterial color="#3a3a40" roughness={0.9} />
-        </mesh>
+        {/* On the pillar, facing the first monitor. Only in the chapter itself: the fall's figure
+            lands here as that chapter ends, and the two never show at once. */}
+        <Character
+          position={[0.6, SPIRAL.platformY, 0.6]}
+          pose={() => spiralMix(useExperience.getState().time)}
+          place={(figure) => {
+            figure.visible = resolve(useExperience.getState().p).chapter.id === 'spiral';
+          }}
+        />
       </group>
     </>
   );
