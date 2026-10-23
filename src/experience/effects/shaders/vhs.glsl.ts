@@ -3,6 +3,10 @@
  * bleed (sharp luma, smeared YIQ chroma; not an RGB split), scanlines, grain,
  * vignette, and a blackout fade. Runs inside a postprocessing EffectPass, which
  * provides inputBuffer, resolution and texelSize.
+ *
+ * The tape records the picture after the tone curve, as a camcorder would. Smeared
+ * before it, in linear HDR, a bright bulb's chroma swamped the dark beside it and
+ * printed a hard red ghost on its right edge.
  */
 export const vhsFragment = /* glsl */ `
 uniform float uTime;
@@ -36,6 +40,11 @@ vec3 yiqToRgb(vec3 c) {
   );
 }
 
+// What the tape sees at uv: the frame after exposure and the tone curve.
+vec3 tapeSignal(vec2 uv) {
+  return acesFilm(texture2D(inputBuffer, uv).rgb * uExposure);
+}
+
 // The CRT bulge is computed here instead of as a UV-transform hook: postprocessing
 // does not allow an effect that both transforms UVs and samples neighbouring pixels,
 // and it detects such hooks by name anywhere in this source, comments included.
@@ -57,13 +66,21 @@ void mainImage(const in vec4 inputColor, const in vec2 screenUv, out vec4 output
   float shift = (hash(vec2(floor(uv.y * 240.0), floor(uTime * 24.0))) - 0.5) * 0.02 * band;
   vec2 sampleUv = vec2(uv.x + shift, uv.y);
 
-  float luma = rgbToYiq(texture2D(inputBuffer, sampleUv).rgb).x;
-  vec2 chroma = vec2(0.0);
+  vec3 own = rgbToYiq(tapeSignal(sampleUv));
+  float luma = own.x;
+  vec2 chroma = own.yz;
   float spacing = (1.5 + 4.0 * uIntensity) * texelSize.x;
-  for (int i = 0; i < 5; i++) {
-    chroma += rgbToYiq(texture2D(inputBuffer, sampleUv - vec2(float(i) * spacing, 0.0)).rgb).yz;
+  for (int i = 1; i < 5; i++) {
+    chroma += rgbToYiq(tapeSignal(sampleUv - vec2(float(i) * spacing, 0.0))).yz;
   }
-  vec3 color = acesFilm(max(yiqToRgb(vec3(luma, chroma / 5.0)), vec3(0.0)) * uExposure);
+  chroma /= 5.0;
+  // Colour bleeds across the edges of lit things, but never lights up the dark beside
+  // them: a dust mote or a bulb would trail a red tail. No stronger than this pixel's
+  // own colour, or than its brightness allows.
+  float bleed = length(chroma);
+  float cap = max(length(own.yz), 1.8 * luma);
+  if (bleed > cap) chroma *= cap / bleed;
+  vec3 color = clamp(yiqToRgb(vec3(luma, chroma)), 0.0, 1.0);
 
   color *= 1.0 - 0.08 * (0.5 + 0.5 * sin(uv.y * resolution.y * 3.14159265));
   // Grain goes on in display (gamma) space: added in linear space, the sRGB encode

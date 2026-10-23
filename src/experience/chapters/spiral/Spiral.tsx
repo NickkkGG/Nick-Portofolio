@@ -43,8 +43,8 @@ const BACKGROUND = (() => {
   const rand = mulberry32(21);
   return Array.from({ length: 42 }, (_, i) => {
     const angle = rand() * Math.PI * 2;
-    // Never on the camera's circle (radius 9.4): from 11 m out.
-    const radius = 11 + rand() * 22;
+    // Never on the camera's circle (radius 10.5): from 12.5 m out.
+    const radius = 12.5 + rand() * 20.5;
     return {
       position: [radius * Math.sin(angle), -168 + rand() * 98, radius * Math.cos(angle)] as [number, number, number],
       angle: angle + Math.PI + (rand() - 0.5) * 0.8,

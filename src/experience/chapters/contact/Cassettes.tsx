@@ -19,14 +19,18 @@ import { damp, smoothstep } from '@/lib/math';
 import { useExperience } from '@/store/useExperience';
 import { resolve } from '@/timeline/resolve';
 import { MODELS, useModel } from '@/experience/assets';
-import { CASSETTE_SCALE, cassettePose } from '../depths/choreography';
+import { CASSETTE_REACH, CASSETTE_SCALE, cassettePose, type TapeLayout, tapeLayout } from '../depths/choreography';
 import { useChapterFrame } from '../useChapterFrame';
 
 const LINKS = content.contact;
 const PARTS = ['Cassette_Shell', 'Cassette_Window', 'Cassette_Reels', 'Cassette_Label'];
-/** How far the tape sits out of its sleeve at rest, and how far it slides out on hover (model metres). */
+/** How far the tape sits out of its sleeve at rest, and how far more it slides out on hover (model metres). */
 const REST_OUT = 0.014;
-const SLIDE_OUT = 0.11;
+const SLIDE_OUT = CASSETTE_REACH / CASSETTE_SCALE - REST_OUT;
+/** The sleeve's ends, either side of the tape's centre (model metres). */
+const SLEEVE_END = 0.1;
+/** The sticker sits toward the sleeve's closed end. */
+const STICKER_X = -0.012;
 const HANDWRITING = '"Marker Felt", "Noteworthy", "Segoe Print", "Bradley Hand", "Ink Free", "Comic Sans MS", cursive';
 const noRaycast = () => undefined;
 
@@ -83,8 +87,11 @@ function paintSticker(canvas: HTMLCanvasElement, link: ContactLink, seed: number
   ctx.fillText('T-120  SP', w * 0.95, h * 0.9);
 }
 
-/** The label on the tape itself, seen once it slides out: the address, in a hurry. */
-function paintLabel(canvas: HTMLCanvasElement, link: ContactLink, seed: number) {
+/**
+ * The label on the tape itself, seen once it slides out: the address, in a hurry, written
+ * at the end that leaves the sleeve first (`side`: +1 right, -1 left).
+ */
+function paintLabel(canvas: HTMLCanvasElement, link: ContactLink, seed: number, side: 1 | -1) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   const { width: w, height: h } = canvas;
@@ -97,12 +104,13 @@ function paintLabel(canvas: HTMLCanvasElement, link: ContactLink, seed: number) 
     ctx.fillRect(0, h * (0.8 + i * 0.065), w, h * 0.05);
   });
   ctx.fillStyle = '#1c1c22';
-  ctx.textAlign = 'left';
+  ctx.textAlign = side > 0 ? 'right' : 'left';
   ctx.textBaseline = 'middle';
   const text = scribbledHref(link.href);
-  ctx.font = `${Math.min(h * 0.42, (w * 0.86) / (0.55 * text.length))}px ${HANDWRITING}`;
+  // Only about two thirds of the label ever leave the sleeve.
+  ctx.font = `${Math.min(h * 0.42, (w * 0.64) / (0.55 * text.length))}px ${HANDWRITING}`;
   ctx.save();
-  ctx.translate(w * 0.06, h * 0.4);
+  ctx.translate(side > 0 ? w * 0.95 : w * 0.05, h * 0.4);
   ctx.rotate((rand() - 0.5) * 0.05);
   ctx.fillText(text, 0, 0);
   ctx.restore();
@@ -111,8 +119,12 @@ function paintLabel(canvas: HTMLCanvasElement, link: ContactLink, seed: number) 
 interface Tape {
   pivot: Group;
   cassette: Group;
+  sleeve: Object3D | null;
+  paper: Mesh;
   hit: Mesh;
   slide: number;
+  /** Which end of the sleeve is open: the tape slides out to the right (+1) or left (-1). */
+  side: 1 | -1;
 }
 
 /** The four tapes, each in its sleeve, copied from depths.glb with their own hand-written labels. */
@@ -153,9 +165,10 @@ class TapeKit {
       const pivot = new Group();
       pivot.scale.setScalar(CASSETTE_SCALE);
       pivot.add(cassette);
-      if (sleeve) pivot.add(sleeve.clone());
+      const sleeveCopy = sleeve?.clone() ?? null;
+      if (sleeveCopy) pivot.add(sleeveCopy);
       const paper = new Mesh(new PlaneGeometry(0.13, 0.055), new MeshStandardMaterial({ map: stickerMap, roughness: 0.9 }));
-      paper.position.set(-0.012, 0.014, 0.0164);
+      paper.position.set(STICKER_X, 0.014, 0.0164);
       paper.rotation.z = (i % 2 ? 1 : -1) * 0.025;
       pivot.add(paper);
       pivot.traverse((child) => {
@@ -165,7 +178,7 @@ class TapeKit {
       const hit = new Mesh(hitGeometry, hitMaterial);
       hit.userData.tape = i;
       pivot.add(hit);
-      this.tapes.push({ pivot, cassette, hit, slide: 0 });
+      this.tapes.push({ pivot, cassette, sleeve: sleeveCopy, paper, hit, slide: 0, side: 1 });
       this.canvases.push({ sticker, label });
       this.textures.push(stickerMap, labelMap);
       this.root.add(pivot);
@@ -175,9 +188,20 @@ class TapeKit {
   paint() {
     this.canvases.forEach(({ sticker, label }, i) => {
       paintSticker(sticker, LINKS[i], i + 1);
-      paintLabel(label, LINKS[i], i + 1);
+      paintLabel(label, LINKS[i], i + 1, this.tapes[i].side);
     });
     for (const texture of this.textures) texture.needsUpdate = true;
+  }
+
+  /** Opens tape `i`'s sleeve on `side`: the sleeve turns end for end, the sticker stays upright. */
+  private open(i: number, side: 1 | -1) {
+    const tape = this.tapes[i];
+    tape.side = side;
+    if (tape.sleeve) tape.sleeve.rotation.y = side > 0 ? 0 : Math.PI;
+    tape.paper.position.x = side * STICKER_X;
+    const { label } = this.canvases[i];
+    paintLabel(label, LINKS[i], i + 1, side);
+    this.textures[2 * i + 1].needsUpdate = true;
   }
 
   /** The pointer is over tape `index`; true if it just started to slide out. */
@@ -194,17 +218,18 @@ class TapeKit {
     return wasOut;
   }
 
-  update(t: number, time: number, delta: number) {
+  update(t: number, time: number, delta: number, layout: TapeLayout) {
     this.tapes.forEach((tape, i) => {
-      const { position, yaw, tilt } = cassettePose(i, this.tapes.length, t, time);
+      const { position, yaw, tilt, side } = cassettePose(i, this.tapes.length, t, time, layout);
+      if (side !== tape.side) this.open(i, side);
       tape.pivot.position.set(...position);
       tape.pivot.rotation.set(tilt, yaw, 0.03 * Math.sin(time * 0.6 + i));
       tape.slide = damp(tape.slide, i === this.hovered ? 1 : 0, 9, delta);
       const out = REST_OUT + SLIDE_OUT * tape.slide;
-      tape.cassette.position.x = out;
-      // Sleeve plus whatever of the tape sticks out of it.
-      const left = -0.1;
-      const right = 0.1 + out;
+      tape.cassette.position.x = side * out;
+      // Sleeve plus whatever of the tape sticks out of its open end.
+      const left = side > 0 ? -SLEEVE_END : -SLEEVE_END - out;
+      const right = side > 0 ? SLEEVE_END + out : SLEEVE_END;
       tape.hit.scale.x = right - left;
       tape.hit.position.x = (left + right) / 2;
     });
@@ -238,29 +263,34 @@ export function Cassettes() {
     return () => kit.dispose();
   }, [kit]);
 
+  // The camera has come round to face the tapes by then (camera/paths.ts).
+  const live = () => {
+    const { chapter, t } = resolve(useExperience.getState().p);
+    return chapter.id === 'contact' && t > 0.3;
+  };
   useChapterFrame('contact', ref);
-  useFrame((_, delta) => {
+  useFrame(({ size }, delta) => {
     const { p, time } = useExperience.getState();
     const { chapter, t } = resolve(p);
     const local = chapter.id === 'contact' ? t : chapter.id === 'loop' ? 1 : 0;
-    kit.update(local, time, Math.min(delta, 0.1));
+    kit.update(local, time, Math.min(delta, 0.1), tapeLayout(size.width / size.height));
     if (fill.current) fill.current.intensity = 5 * smoothstep(0, 0.25, local);
+    // Scrolled away with a tape out: it goes back in its sleeve.
+    if (!live() && kit.release()) useExperience.getState().setTape(null);
   });
 
-  const live = () => {
-    const { chapter, t } = resolve(useExperience.getState().p);
-    return chapter.id === 'contact' && t > 0.25;
-  };
   const onOver = (event: ThreeEvent<PointerEvent>) => {
     const index = tapeOf(event.object);
     if (index < 0 || !live()) return;
     event.stopPropagation();
     if (kit.hover(index)) playTapeSlide(true);
+    useExperience.getState().setTape(index);
     setPointer(true);
   };
   const onOut = (event: ThreeEvent<PointerEvent>) => {
     if (tapeOf(event.object) < 0) return;
     if (kit.release() && live()) playTapeSlide(false);
+    useExperience.getState().setTape(null);
     setPointer(false);
   };
   const onClick = (event: ThreeEvent<MouseEvent>) => {
@@ -274,7 +304,7 @@ export function Cassettes() {
   return (
     <group ref={ref}>
       {/* Soft light from the camera's side so the stickers read; the bulb backlights the rest. */}
-      <pointLight ref={fill} position={[0, -178, 4.2]} color="#f2e6d0" intensity={0} distance={10} decay={2} />
+      <pointLight ref={fill} position={[0, -178, 5]} color="#f2e6d0" intensity={0} distance={10} decay={2} />
       <primitive object={kit.root} onPointerOver={onOver} onPointerOut={onOut} onClick={onClick} />
     </group>
   );

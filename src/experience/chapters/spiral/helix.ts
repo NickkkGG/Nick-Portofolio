@@ -8,7 +8,8 @@ export const SPIRAL = {
   radius: 6,
   turns: 1.25,
   platformY: -80,
-  cameraDistance: 3.4,
+  /** Far enough back that the parked monitor sits in the frame with the dark around it. */
+  cameraDistance: 4.5,
   cameraLift: 0.15,
 } as const;
 

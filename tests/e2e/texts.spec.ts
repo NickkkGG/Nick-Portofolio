@@ -19,6 +19,24 @@ test.describe('chapter texts', () => {
     }
   });
 
+  test('every chapter text stays on screen, clear of the nav', async ({ page }) => {
+    const cases: [number, string][] = [
+      [0.03, 'Your Name'],
+      [0.311, 'Project 01'],
+      [0.704, HEADLINE],
+      [0.8, 'Tool 01'],
+      [0.885, 'pick a tape'],
+    ];
+    const nav = await page.getByRole('navigation').boundingBox();
+    for (const [p, text] of cases) {
+      await jumpTo(page, p);
+      const item = page.getByTestId('chapter-texts').getByText(text);
+      await expect(item, `p=${p}`).toBeInViewport({ ratio: 1 });
+      const box = await item.boundingBox();
+      expect(box!.y, `p=${p}`).toBeGreaterThan(nav!.y + nav!.height);
+    }
+  });
+
   test('the spiral names the focused project', async ({ page }) => {
     const texts = page.getByTestId('chapter-texts');
     await jumpTo(page, 0.311);

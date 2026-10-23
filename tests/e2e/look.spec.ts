@@ -15,9 +15,12 @@ test.describe('look', () => {
     expect(litBlockRatio(await shot(page, { maskOverlay: true }), 16, 0.12)).toBeGreaterThanOrEqual(0.35);
   });
 
-  test('the focused project monitor fills a big part of the frame', async ({ page }) => {
+  test('the focused project monitor is the subject, with the dark around it', async ({ page }) => {
     await jumpTo(page, 0.398); // camera parked at monitor 03
     // Share of 16 px blocks that are screen-bright: tiny bright particles never fill a whole block.
-    expect(litBlockRatio(await shot(page, { maskOverlay: true }), 16, 0.7)).toBeGreaterThanOrEqual(0.12);
+    const screen = litBlockRatio(await shot(page, { maskOverlay: true }), 16, 0.7);
+    expect(screen).toBeGreaterThanOrEqual(0.04);
+    // Not so close that the set fills the frame.
+    expect(screen).toBeLessThanOrEqual(0.1);
   });
 });

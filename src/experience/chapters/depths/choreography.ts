@@ -96,23 +96,57 @@ export const CASSETTE_SCALE = 3;
 /** The sleeve's outside, at that scale. */
 export const CASSETTE_WIDTH = 0.193 * CASSETTE_SCALE;
 export const CASSETTE_HALF_HEIGHT = (0.109 * CASSETTE_SCALE) / 2;
-const CASSETTE_SPACING = 0.8;
-const CASSETTE_Y = -178.6;
+/** How far a hovered tape sticks out of its sleeve, at that scale (Cassettes.tsx). */
+export const CASSETTE_REACH = 0.134 * CASSETTE_SCALE;
 /** Out of sight under the water, where each tape waits to come up. */
 const CASSETTE_SUNK_Y = -181.2;
+/** Well in front of the character, close enough to the camera for the stickers to read. */
+const TAPE_Z = 3;
+/** Wings: the columns' centres either side of the character, and the top row's height. */
+const WING_X = 1;
+const WING_TOP_Y = -178.4;
+/** Centre to centre down a column: the sleeve's height and a hand's width of air. */
+const ROW_STEP = 0.5;
+const COLUMN_STEP = 0.42;
+const COLUMN_MID_Y = -178.65;
+
+/**
+ * Wide screens: two columns of tapes either side of the character, read left to right,
+ * top to bottom, each opening away from it. Narrow screens: one column in front of it.
+ */
+export type TapeLayout = 'wings' | 'column';
+
+export function tapeLayout(aspect: number): TapeLayout {
+  return aspect < 0.95 ? 'column' : 'wings';
+}
+
+/** Where tape `i` of `count` waits once it is up, and which way it slides out (+1 right, -1 left). */
+function tapeSlot(i: number, count: number, layout: TapeLayout): { x: number; y: number; side: 1 | -1 } {
+  if (layout === 'column') return { x: 0, y: COLUMN_MID_Y + ((count - 1) / 2 - i) * COLUMN_STEP, side: 1 };
+  const right = i % 2 === 1;
+  return { x: right ? WING_X : -WING_X, y: WING_TOP_Y - Math.floor(i / 2) * ROW_STEP, side: right ? 1 : -1 };
+}
 
 /**
  * Tape `i` of `count` at contact-local t: it rises out of the water, one after another,
- * into a shallow arc in front of the character, turned toward the camera, bobbing.
+ * into its place beside the character, turned toward the camera, bobbing. A hovered tape
+ * slides out on its `side`, away from every other tape.
  */
-export function cassettePose(i: number, count: number, t: number, time = 0): { position: Vec3; yaw: number; tilt: number } {
-  const x = (i - (count - 1) / 2) * CASSETTE_SPACING;
+export function cassettePose(
+  i: number,
+  count: number,
+  t: number,
+  time = 0,
+  layout: TapeLayout = 'wings',
+): { position: Vec3; yaw: number; tilt: number; side: 1 | -1 } {
+  const { x, y, side } = tapeSlot(i, count, layout);
   const rise = smoothstep(0.03 * i, 0.25 + 0.03 * i, t);
   const bob = 0.025 * Math.sin(time * 1.1 + i * 1.7);
   return {
-    position: [x, lerp(CASSETTE_SUNK_Y, CASSETTE_Y, rise) + bob * rise, 2.5 - 0.12 * Math.abs(x)],
-    yaw: -0.12 * x,
+    position: [x, lerp(CASSETTE_SUNK_Y, y, rise) + bob * rise, TAPE_Z - 0.1 * Math.abs(x)],
+    yaw: -0.16 * x,
     tilt: 0.04 * Math.sin(time * 0.8 + i * 2.3),
+    side,
   };
 }
 

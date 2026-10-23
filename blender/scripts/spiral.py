@@ -4,7 +4,7 @@
 
 Writes blender/source/spiral.blend. Same coordinates as the web (three.js metres): the
 pillar stands on the axis x = z = 0, the project monitors hang at radius 6 between
-y = -84 and -156, and the camera circles them at radius 9.4. The pillar hangs above the
+y = -84 and -156, and the camera circles them at radius 10.5. The pillar hangs above the
 depths (floor y = -180) and frays into dangling ends, so it never touches the bulb.
 """
 

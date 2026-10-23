@@ -28,6 +28,8 @@ export interface ExperienceState {
   knock: KnockState;
   sounds: SoundEvent[];
   lastActivity: number;
+  /** The contact tape under the pointer, if any. */
+  tape: number | null;
   setSceneReady(): void;
   setWarmup(amount: number): void;
   play(): void;
@@ -39,6 +41,7 @@ export interface ExperienceState {
   setCameraPose(pose: CameraPose): void;
   registerScroll(api: ScrollApi | null): void;
   knockAt(position: Vec3): boolean;
+  setTape(index: number | null): void;
 }
 
 export interface SoundEvent {
@@ -64,6 +67,7 @@ export const initialExperienceState: Pick<
   | 'knock'
   | 'sounds'
   | 'lastActivity'
+  | 'tape'
 > = {
   started: false,
   sceneReady: false,
@@ -80,6 +84,7 @@ export const initialExperienceState: Pick<
   knock: INITIAL_KNOCK,
   sounds: [],
   lastActivity: 0,
+  tape: null,
 };
 
 export const useExperience = create<ExperienceState>()(
@@ -131,6 +136,9 @@ export const useExperience = create<ExperienceState>()(
         lastActivity: time,
       });
       return true;
+    },
+    setTape: (index) => {
+      if (get().tape !== index) set({ tape: index });
     },
   })),
 );

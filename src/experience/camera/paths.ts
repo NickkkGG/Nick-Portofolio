@@ -28,8 +28,11 @@ const AFTER_SPIRAL: CameraKeyframe[] = [
   { p: 0.6, position: [0, -177, 7], target: [0, -179.5, 0] },
   { p: 0.72, position: [0, -178, 4], target: [0, -178, 0] },
   { p: 0.82, position: [3, -177, 3], target: [0, -177.5, 0] },
-  // Contact: settling back in front of the tapes, focused on them rather than on the bulb.
-  { p: 0.92, position: [0, -178.3, 6.4], target: [0, -178.7, 1.6] },
+  // Contact: round to the front while the tapes rise, so they are never seen piled up
+  // edge-on, then easing in, focused on them rather than on the bulb.
+  // Looking almost level, so the bulb hangs below the tagline instead of behind it.
+  { p: 0.85, position: [0.25, -178.2, 6.5], target: [0, -178.5, 2.9] },
+  { p: 0.92, position: [0, -178.3, 6], target: [0, -178.45, 2.9] },
   // Teleport: both keyframes share p; the later one wins from LOOP_TELEPORT_P onwards.
   { p: LOOP_TELEPORT_P, position: [0, -215, 7], target: [0, -230, 0] },
   { p: LOOP_TELEPORT_P, position: [1.6, 30, 2.6], target: [-0.25, 0, -1] },

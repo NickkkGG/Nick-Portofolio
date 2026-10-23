@@ -21,6 +21,11 @@ export interface LightShaftProps {
   intensityAt?: (p: number) => number;
   /** Metres from the lens over which the beam fades in, so flying through it never whites out the frame. */
   nearFade?: [number, number];
+  /**
+   * Share of the beam's length over which it fades in from its source. A beam cut off by a
+   * window frame or a screen can start sharp; one pouring off a bare bulb must not.
+   */
+  fadeIn?: number;
 }
 
 const vertexShader = /* glsl */ `
@@ -48,6 +53,7 @@ uniform vec3 uColor;
 uniform float uIntensity;
 uniform float uTime;
 uniform vec2 uNearFade;
+uniform float uFadeIn;
 varying float vAlong;
 varying float vAngle;
 varying float vFacing;
@@ -60,7 +66,8 @@ void main() {
   float edges = pow(clamp(vFacing, 1e-4, 1.0), 1.6);
   float streaks = 0.75 + 0.25 * sin(vAngle * 11.0 + uTime * 0.35) * sin(vAngle * 5.0 - uTime * 0.2 + vAlong * 3.0);
   float near = smoothstep(uNearFade.x, uNearFade.y, vDepth);
-  gl_FragColor = vec4(uColor, uIntensity * along * edges * streaks * near);
+  float start = uFadeIn > 0.0 ? smoothstep(0.0, uFadeIn, vAlong) : 1.0;
+  gl_FragColor = vec4(uColor, uIntensity * along * edges * streaks * near * start);
 }
 `;
 
@@ -76,6 +83,7 @@ export function LightShaft({
   intensity,
   intensityAt,
   nearFade = [0.2, 1],
+  fadeIn = 0,
 }: LightShaftProps) {
   const ref = useRef<Mesh>(null);
   const material = useRef<ShaderMaterial>(null);
@@ -102,6 +110,7 @@ export function LightShaft({
         uLength: { value: length },
         uTime: { value: 0 },
         uNearFade: { value: new Vector2(...nearFade) },
+        uFadeIn: { value: fadeIn },
       },
       transparent: true,
       depthWrite: false,

@@ -4,6 +4,7 @@ import {
   bulbDrop,
   bulbIntensity,
   CASSETTE_HALF_HEIGHT,
+  CASSETTE_REACH,
   CASSETTE_WIDTH,
   cassettePose,
   characterPose,
@@ -14,6 +15,7 @@ import {
   problemPose,
   RIPPLE_LIFE,
   SEAT_TOP,
+  tapeLayout,
 } from './choreography';
 
 const at = (id: 'problem' | 'stack' | 'contact' | 'loop', t: number) => {
@@ -119,14 +121,46 @@ describe('the tapes', () => {
     expect(early).toBeGreaterThan(late);
   });
 
-  it('hang in a row in front of the character once they are up, clear of the water', () => {
+  it('wait in two columns either side of the character once up, clear of the water', () => {
     const poses = Array.from({ length: 4 }, (_, i) => cassettePose(i, 4, 0.5));
     for (const { position } of poses) {
       expect(position[1] - CASSETTE_HALF_HEIGHT).toBeGreaterThan(FLOOR + 0.5);
       expect(position[2]).toBeGreaterThan(0.8);
+      // The character stands at x = 0: the space around it stays open.
+      expect(Math.abs(position[0]) - CASSETTE_WIDTH / 2).toBeGreaterThan(0.5);
     }
-    for (let i = 1; i < 4; i++) expect(poses[i].position[0] - poses[i - 1].position[0]).toBeGreaterThan(CASSETTE_WIDTH);
-    expect(poses[0].position[0] + poses[3].position[0]).toBeCloseTo(0, 6);
+    // Read left to right, top to bottom.
+    expect(poses[0].position[0]).toBeLessThan(0);
+    expect(poses[1].position[0]).toBeGreaterThan(0);
+    expect(poses[2].position[1]).toBeLessThan(poses[0].position[1] - 2 * CASSETTE_HALF_HEIGHT);
+    expect(poses[0].position[0] + poses[1].position[0]).toBeCloseTo(0, 6);
+  });
+
+  it('slide out away from every other tape, so a hovered one never runs into a neighbour', () => {
+    for (const layout of ['wings', 'column'] as const) {
+      const poses = Array.from({ length: 4 }, (_, i) => cassettePose(i, 4, 0.5, 0, layout));
+      poses.forEach((pose, i) => {
+        // Its sleeve, plus the tape out of the open end.
+        const [x, y] = pose.position;
+        const left = x - CASSETTE_WIDTH / 2 - (pose.side < 0 ? CASSETTE_REACH : 0);
+        const right = x + CASSETTE_WIDTH / 2 + (pose.side > 0 ? CASSETTE_REACH : 0);
+        poses.forEach((other, j) => {
+          if (i === j) return;
+          const acrossX = Math.min(right, other.position[0] + CASSETTE_WIDTH / 2) - Math.max(left, other.position[0] - CASSETTE_WIDTH / 2);
+          const acrossY = 2 * CASSETTE_HALF_HEIGHT - Math.abs(y - other.position[1]);
+          expect(acrossX > 0 && acrossY > 0, `${layout}: tape ${i} runs into tape ${j}`).toBe(false);
+        });
+      });
+    }
+  });
+
+  it('stack in one column in front of the character on a narrow screen', () => {
+    expect(tapeLayout(16 / 10)).toBe('wings');
+    expect(tapeLayout(4 / 3)).toBe('wings');
+    expect(tapeLayout(9 / 19.5)).toBe('column');
+    const poses = Array.from({ length: 4 }, (_, i) => cassettePose(i, 4, 0.5, 0, 'column'));
+    for (let i = 1; i < 4; i++) expect(poses[i - 1].position[1] - poses[i].position[1]).toBeGreaterThan(2 * CASSETTE_HALF_HEIGHT);
+    for (const { position } of poses) expect(position[1] - CASSETTE_HALF_HEIGHT).toBeGreaterThan(FLOOR + 0.3);
   });
 
   it('bob gently while they wait', () => {

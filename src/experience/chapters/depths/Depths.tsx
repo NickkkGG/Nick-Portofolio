@@ -194,16 +194,18 @@ export function Depths() {
         <group position={[0, -WIRE, 0]}>
           <primitive object={kit.bulb} />
           <pointLight ref={light} color="#ffb35c" intensity={0} distance={40} decay={2} />
+          {/* Light pouring off the bulb into the dust: it starts at the glass, with no rim. */}
           <LightShaft
             group="depths"
-            from={[0, -0.12, 0]}
+            from={[0, -0.04, 0]}
             toward={[0, -3, 0]}
             length={2.4}
-            radiusStart={0.25}
+            radiusStart={0.06}
             radiusEnd={2.3}
             color="#ffb35c"
             intensity={0}
-            intensityAt={(p) => 0.05 * bulbIntensity(p)}
+            intensityAt={(p) => 0.06 * bulbIntensity(p)}
+            fadeIn={0.3}
           />
         </group>
       </group>
