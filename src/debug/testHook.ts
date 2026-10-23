@@ -22,6 +22,8 @@ export interface ExperienceSnapshot {
   tension: number;
   /** Sound events so far, e.g. each knock and where it came from. */
   sounds: SoundEvent[];
+  /** Whether the soundtrack is switched on. */
+  music: boolean;
 }
 
 export interface ExperienceTestHook {
@@ -70,6 +72,7 @@ export function createTestHook(): ExperienceTestHook {
         scrollY: window.scrollY,
         tension: tensionAt(s.knock, s.time),
         sounds: s.sounds,
+        music: s.music,
       };
     },
     waitFrames: (n) =>

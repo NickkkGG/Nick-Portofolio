@@ -30,6 +30,8 @@ export interface ExperienceState {
   lastActivity: number;
   /** The contact tape under the pointer, if any. */
   tape: number | null;
+  /** Whether the soundtrack plays (the visitor's choice; the sounds of the scene always do). */
+  music: boolean;
   setSceneReady(): void;
   setWarmup(amount: number): void;
   play(): void;
@@ -42,6 +44,7 @@ export interface ExperienceState {
   registerScroll(api: ScrollApi | null): void;
   knockAt(position: Vec3): boolean;
   setTape(index: number | null): void;
+  setMusic(on: boolean): void;
 }
 
 export interface SoundEvent {
@@ -68,6 +71,7 @@ export const initialExperienceState: Pick<
   | 'sounds'
   | 'lastActivity'
   | 'tape'
+  | 'music'
 > = {
   started: false,
   sceneReady: false,
@@ -85,6 +89,7 @@ export const initialExperienceState: Pick<
   sounds: [],
   lastActivity: 0,
   tape: null,
+  music: true,
 };
 
 export const useExperience = create<ExperienceState>()(
@@ -140,5 +145,6 @@ export const useExperience = create<ExperienceState>()(
     setTape: (index) => {
       if (get().tape !== index) set({ tape: index });
     },
+    setMusic: (on) => set({ music: on }),
   })),
 );

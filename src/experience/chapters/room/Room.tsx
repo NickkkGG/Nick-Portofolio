@@ -25,7 +25,7 @@ import type { Vec3 } from '@/experience/camera/types';
 import { lampLevel } from '@/experience/flicker';
 import { useExperience } from '@/store/useExperience';
 import { useChapterFrame } from '../useChapterFrame';
-import { canKnock, type KnockHit, knockTarget, lampNervousness, roomT } from './knock';
+import { canKnock, type KnockHit, knockTarget, KNUCKLES, knucklePoint, lampNervousness, roomT } from './knock';
 import { type DustBurst, KnockDust, MAX_BURSTS } from './KnockDust';
 import { type AtlasMaps, bakeLighting, roomLight, type Sway } from './lighting';
 import { RoomScreen } from './RoomScreen';
@@ -238,7 +238,9 @@ export function Room() {
     event.stopPropagation();
     const target = knockTarget(toHits(event));
     if (!target || !store.knockAt(target.point)) return;
-    bursts.current = [...bursts.current, { time: store.time, point: target.point, normal: target.normal }].slice(-MAX_BURSTS);
+    // Knock-knock: each knuckle shakes its own puff off the wall.
+    const puffs = KNUCKLES.map(({ delay }, k) => ({ time: store.time + delay, point: knucklePoint(target.point, target.normal, k), normal: target.normal }));
+    bursts.current = [...bursts.current, ...puffs].slice(-MAX_BURSTS);
     if (store.cameraPose) playKnock(target.point, store.cameraPose);
   };
 

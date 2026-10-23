@@ -12,7 +12,7 @@ export function audioContext(): AudioContext | null {
 }
 
 /** A buffer of white noise, `seconds` long. */
-export function noiseBuffer(ctx: AudioContext, seconds: number): AudioBuffer {
+export function noiseBuffer(ctx: BaseAudioContext, seconds: number): AudioBuffer {
   const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * seconds)), ctx.sampleRate);
   const data = buffer.getChannelData(0);
   for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;

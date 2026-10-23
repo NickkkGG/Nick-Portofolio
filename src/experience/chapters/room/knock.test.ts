@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canKnock, INITIAL_KNOCK, knock, knockTarget, type KnockState, lampNervousness, roomT, tensionAt } from './knock';
+import { canKnock, INITIAL_KNOCK, knock, knockTarget, type KnockState, KNUCKLES, knucklePoint, lampNervousness, roomT, tensionAt } from './knock';
 
 function knockAt(...times: number[]): { state: KnockState; whosThere: boolean } {
   let state = INITIAL_KNOCK;
@@ -85,5 +85,25 @@ describe('room clock', () => {
     expect(lampNervousness(0.15)).toBe(0);
     expect(lampNervousness(0.5)).toBeGreaterThan(lampNervousness(0.3));
     expect(lampNervousness(1)).toBe(1);
+  });
+});
+
+describe('knock-knock', () => {
+  it('one click knocks twice, the second a beat later and a little softer', () => {
+    expect(KNUCKLES).toHaveLength(2);
+    expect(KNUCKLES[0].delay).toBe(0);
+    expect(KNUCKLES[1].delay).toBeGreaterThan(0.2);
+    expect(KNUCKLES[1].delay).toBeLessThan(0.4);
+    expect(KNUCKLES[1].strength).toBeLessThan(KNUCKLES[0].strength);
+  });
+
+  it('the second knuckle lands beside the first, on the same wall', () => {
+    const back = knucklePoint([0.5, 1.4, -1.18], [0, 0, 1], 1);
+    expect(back[2]).toBeCloseTo(-1.18, 6);
+    expect(Math.hypot(back[0] - 0.5, back[1] - 1.4)).toBeGreaterThan(0.01);
+    expect(Math.hypot(back[0] - 0.5, back[1] - 1.4)).toBeLessThan(0.06);
+    const side = knucklePoint([-1.3, 1.2, 0.2], [1, 0, 0], 1);
+    expect(side[0]).toBeCloseTo(-1.3, 6);
+    expect(knucklePoint([0.5, 1.4, -1.18], [0, 0, 1], 0)).toEqual([0.5, 1.4, -1.18]);
   });
 });

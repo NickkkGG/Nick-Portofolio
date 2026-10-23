@@ -11,8 +11,8 @@ export interface DustBurst {
   normal: Vec3;
 }
 
-/** Bursts on screen at once; an older one is gone long before a sixth knock lands. */
-export const MAX_BURSTS = 6;
+/** Bursts on screen at once, two per click; an older one is gone long before a sixth click lands. */
+export const MAX_BURSTS = 12;
 
 const vertexShader = /* glsl */ `
 uniform float uViewportHeight;

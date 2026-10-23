@@ -23,6 +23,23 @@ const REMEMBERED = 8;
 /** Thin things on a wall (posters, stains, webs) still knock the wall behind them. */
 const ON_WALL = 0.06;
 
+/** One click knocks twice, knock-knock: when each knuckle lands after the click (s), and how hard. */
+export const KNUCKLES = [
+  { delay: 0, strength: 1 },
+  { delay: 0.3, strength: 0.85 },
+] as const;
+/** The second knuckle lands this far along the wall from the first (m). */
+const KNUCKLE_STEP = 0.03;
+
+/** Where knuckle `k` lands for a click at `point` on a wall facing `normal`. */
+export function knucklePoint(point: Vec3, normal: Vec3, k: number): Vec3 {
+  const [nx, , nz] = normal;
+  // Sideways along the wall; on a floor or ceiling, along x.
+  const length = Math.hypot(nx, nz);
+  const side: Vec3 = length > 0.01 ? [nz / length, 0, -nx / length] : [1, 0, 0];
+  return [point[0] + side[0] * KNUCKLE_STEP * k, point[1] - 0.012 * k, point[2] + side[2] * KNUCKLE_STEP * k];
+}
+
 export interface KnockHit {
   distance: number;
   knockable: boolean;

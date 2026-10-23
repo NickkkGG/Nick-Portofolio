@@ -1,4 +1,5 @@
 import type { CameraPose, Vec3 } from '@/experience/camera/types';
+import { KNUCKLES } from '@/experience/chapters/room/knock';
 import { audioContext, noiseBuffer } from './context';
 
 /**
@@ -47,6 +48,19 @@ function hit(ctx: AudioContext, out: AudioNode, at: number, strength: number) {
   thump.connect(body).connect(out);
   thump.start(at);
   thump.stop(at + 0.2);
+
+  // The knuckle on the plaster itself, high enough that laptop speakers carry it.
+  const knuckle = ctx.createOscillator();
+  knuckle.type = 'triangle';
+  knuckle.frequency.setValueAtTime(290, at);
+  knuckle.frequency.exponentialRampToValueAtTime(170, at + 0.06);
+  const rap = ctx.createGain();
+  rap.gain.setValueAtTime(0.0001, at);
+  rap.gain.exponentialRampToValueAtTime(0.5 * strength, at + 0.002);
+  rap.gain.exponentialRampToValueAtTime(0.0001, at + 0.09);
+  knuckle.connect(rap).connect(out);
+  knuckle.start(at);
+  knuckle.stop(at + 0.12);
 
   const click = ctx.createBufferSource();
   click.buffer = noiseBuffer(ctx, 0.06);
@@ -100,8 +114,7 @@ export function playKnock(position: Vec3, listener: CameraPose): void {
     panner.connect(ctx.destination);
     panner.connect(room);
     const now = ctx.currentTime + 0.01;
-    hit(ctx, muffle, now, 1);
-    hit(ctx, muffle, now + 0.17 + Math.random() * 0.03, 0.8);
+    for (const { delay, strength } of KNUCKLES) hit(ctx, muffle, now + delay, strength);
   } catch {
     // No sound is better than a broken room.
   }

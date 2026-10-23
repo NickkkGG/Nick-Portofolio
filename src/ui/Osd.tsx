@@ -4,6 +4,7 @@ import { content } from '@/content';
 import { useExperience } from '@/store/useExperience';
 import { getChapter } from '@/timeline/chapters';
 import { displayState } from '@/timeline/loop';
+import { MusicToggle } from './MusicToggle';
 import { Nav } from './Nav';
 import { formatTimecode } from './timecode';
 
@@ -30,8 +31,9 @@ export function Osd() {
           {content.site.name}
         </span>
       </div>
-      <div className="absolute right-6 top-5">
+      <div className="absolute right-6 top-5 flex items-center gap-8">
         <Nav />
+        <MusicToggle />
       </div>
       <div data-overlay-item data-testid="timecode" className="absolute bottom-5 left-6 text-2xl tracking-widest">
         {timecode}
