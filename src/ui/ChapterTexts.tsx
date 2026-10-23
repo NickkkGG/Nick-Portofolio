@@ -6,6 +6,7 @@ import { channelLabel } from '@/content/schema';
 import { focusedIndex } from '@/experience/chapters/spiral/helix';
 import { useExperience } from '@/store/useExperience';
 import { displayState } from '@/timeline/loop';
+import { showKnockHint } from './knockHint';
 import { revealFraction, TEXT_WINDOWS } from './reveal';
 import { TypedText } from './TypedText';
 
@@ -14,6 +15,9 @@ const { site, projects, about, stack, contact } = content;
 
 function RoomText({ t }: { t: number }) {
   const f = revealFraction(t, TEXT_WINDOWS.roomIntro);
+  const hint = useExperience((s) => showKnockHint(s.time, s.lastActivity, s.p));
+  // Blinks at 1 Hz on the store clock, like REC, so frozen screenshots stay still.
+  const hintOn = useExperience((s) => Math.floor(s.time) % 2 === 0);
   return (
     <div data-overlay-item className="absolute bottom-28 left-10 font-osd">
       <p className="text-6xl tracking-wide">
@@ -22,6 +26,11 @@ function RoomText({ t }: { t: number }) {
       <p className="mt-1 text-2xl tracking-widest opacity-80">
         <TypedText text={site.role} fraction={f} />
       </p>
+      {hint && (
+        <p data-testid="knock-hint" className={`mt-4 text-xl tracking-widest ${hintOn ? 'opacity-70' : 'opacity-30'}`}>
+          ▸ knock knock
+        </p>
+      )}
     </div>
   );
 }

@@ -65,4 +65,39 @@ describe('experience store', () => {
     store().setScroll(1.02);
     expect(store().p).toBeCloseTo(0.02);
   });
+
+  it('a knock in the room raises the tension and logs a knock sound where it hit', () => {
+    store().setScroll(0.01, { programmatic: true });
+    store().tick(3);
+    expect(store().knockAt([0.5, 2.2, -1.18])).toBe(true);
+    expect(store().knock.knocks).toEqual([3]);
+    expect(store().knock.tension).toBe(1);
+    expect(store().sounds).toEqual([{ name: 'knock', time: 3, position: [0.5, 2.2, -1.18] }]);
+  });
+
+  it('knocks outside the room do nothing', () => {
+    store().setScroll(0.3, { programmatic: true });
+    expect(store().knockAt([0, 2, -1.18])).toBe(false);
+    expect(store().knock.knocks).toEqual([]);
+    expect(store().sounds).toEqual([]);
+  });
+
+  it('a knock too soon after the last one is not heard', () => {
+    store().knockAt([0, 2, -1.18]);
+    store().tick(0.3);
+    expect(store().knockAt([0, 2, -1.18])).toBe(false);
+    expect(store().sounds).toHaveLength(1);
+  });
+
+  it('playing, scrolling and knocking all count as activity', () => {
+    store().tick(2);
+    store().play();
+    expect(store().lastActivity).toBe(2);
+    store().tick(3);
+    store().setScroll(0.02);
+    expect(store().lastActivity).toBe(5);
+    store().tick(4);
+    store().knockAt([0, 2, -1.18]);
+    expect(store().lastActivity).toBe(9);
+  });
 });

@@ -1,5 +1,6 @@
 import type { CameraPose } from '@/experience/camera/types';
-import { useExperience } from '@/store/useExperience';
+import { tensionAt } from '@/experience/chapters/room/knock';
+import { type SoundEvent, useExperience } from '@/store/useExperience';
 import type { ChapterId } from '@/timeline/chapters';
 import { displayState } from '@/timeline/loop';
 import { resolve } from '@/timeline/resolve';
@@ -17,6 +18,10 @@ export interface ExperienceSnapshot {
   frame: number;
   camera: CameraPose | null;
   scrollY: number;
+  /** Ghost knock tension right now (0-5). */
+  tension: number;
+  /** Sound events so far, e.g. each knock and where it came from. */
+  sounds: SoundEvent[];
 }
 
 export interface ExperienceTestHook {
@@ -60,6 +65,8 @@ export function createTestHook(): ExperienceTestHook {
         frame: s.frame,
         camera: s.cameraPose,
         scrollY: window.scrollY,
+        tension: tensionAt(s.knock, s.time),
+        sounds: s.sounds,
       };
     },
     waitFrames: (n) =>

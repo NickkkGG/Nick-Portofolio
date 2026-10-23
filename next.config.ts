@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
         loaders: ["@tailwindcss/turbopack"],
         as: "*.css",
       },
+      // `import source from "./file.ts?raw"`: the room's monitor shows the site's own code.
+      "*.ts": {
+        condition: { query: "?raw" },
+        type: "raw",
+      },
     },
   },
 };

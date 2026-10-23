@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import type { CameraPose } from '@/experience/camera/types';
+import type { CameraPose, Vec3 } from '@/experience/camera/types';
+import { canKnock, INITIAL_KNOCK, knock, type KnockState } from '@/experience/chapters/room/knock';
 import type { ScrollApi } from '@/scroll/types';
 import { nextLoopIndex } from '@/timeline/loop';
 import { wrapProgress } from '@/timeline/resolve';
@@ -22,6 +23,9 @@ export interface ExperienceState {
   vhsSpike: number;
   cameraPose: CameraPose | null;
   scroll: ScrollApi | null;
+  knock: KnockState;
+  sounds: SoundEvent[];
+  lastActivity: number;
   setSceneReady(): void;
   play(): void;
   setScroll(p: number, opts?: { programmatic?: boolean }): void;
@@ -31,11 +35,31 @@ export interface ExperienceState {
   setVhsBase(v: number): void;
   setCameraPose(pose: CameraPose): void;
   registerScroll(api: ScrollApi | null): void;
+  knockAt(position: Vec3): boolean;
+}
+
+export interface SoundEvent {
+  name: string;
+  time: number;
+  position?: Vec3;
 }
 
 export const initialExperienceState: Pick<
   ExperienceState,
-  'started' | 'sceneReady' | 'p' | 'loopIndex' | 'frame' | 'time' | 'frozen' | 'vhsBase' | 'vhsSpike' | 'cameraPose' | 'scroll'
+  | 'started'
+  | 'sceneReady'
+  | 'p'
+  | 'loopIndex'
+  | 'frame'
+  | 'time'
+  | 'frozen'
+  | 'vhsBase'
+  | 'vhsSpike'
+  | 'cameraPose'
+  | 'scroll'
+  | 'knock'
+  | 'sounds'
+  | 'lastActivity'
 > = {
   started: false,
   sceneReady: false,
@@ -48,6 +72,9 @@ export const initialExperienceState: Pick<
   vhsSpike: 0,
   cameraPose: null,
   scroll: null,
+  knock: INITIAL_KNOCK,
+  sounds: [],
+  lastActivity: 0,
 };
 
 export const useExperience = create<ExperienceState>()(
@@ -56,7 +83,7 @@ export const useExperience = create<ExperienceState>()(
     setSceneReady: () => set({ sceneReady: true }),
     play: () => {
       if (get().started) return;
-      set({ started: true, vhsSpike: 1 });
+      set({ started: true, vhsSpike: 1, lastActivity: get().time });
       get().scroll?.start();
     },
     setScroll: (p, opts) => {
@@ -70,6 +97,7 @@ export const useExperience = create<ExperienceState>()(
         p: next,
         loopIndex: nextLoop,
         vhsSpike: Math.max(vhsSpike, chapterSpike, loopSpike),
+        lastActivity: get().time,
       });
     },
     tick: (delta) => {
@@ -85,5 +113,18 @@ export const useExperience = create<ExperienceState>()(
     setVhsBase: (v) => set({ vhsBase: v }),
     setCameraPose: (pose) => set({ cameraPose: pose }),
     registerScroll: (api) => set({ scroll: api }),
+    knockAt: (position) => {
+      const { p, time, sounds } = get();
+      if (!canKnock(p)) return false;
+      const result = knock(get().knock, time);
+      if (!result.accepted) return false;
+      set({
+        knock: result.state,
+        // Kept short: tests read it, nothing else needs history.
+        sounds: [...sounds, { name: 'knock', time, position }].slice(-32),
+        lastActivity: time,
+      });
+      return true;
+    },
   })),
 );

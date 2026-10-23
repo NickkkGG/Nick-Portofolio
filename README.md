@@ -11,7 +11,14 @@ Website portofolio satu halaman yang digerakkan scroll. Pengunjung mengikuti seo
 - OSD ala kamera perekam dan menu.
 - Teks tiap bab dengan efek diketik.
 
-Semua bentuk 3D masih **blockout sementara** (kotak, kapsul, bola). Bentuk-bentuk ini akan diganti aset final mulai tahap 2 (karakter) dan tahap 3 (ruangan).
+**Tahap 3 (ruangan final) sedang direview.** Ruangan pembuka sekarang memakai aset Blender asli:
+- Dinding plester mengelupas dengan noda lembap, lantai beton, meja kayu, kursi kulit, monitor CRT, lampu meja dengan bohlam telanjang, jendela besi dengan kerai, radiator, rak, lemari, PC, kabel, poster, dan jaring laba-laba.
+- Tekstur PBR berlisensi CC0, dengan cahaya yang di-bake di Blender (bulan, lampu, dan layar terpisah, jadi lampu bisa berkedip live).
+- Lampu yang berkedip, maksimal 3 kali per detik.
+- Monitor yang mengetik source code website ini sendiri.
+- Ketukan hantu: klik dinding untuk mengetuk. Ada suaranya, debu dan serpihan cat berjatuhan, lalu lampu berkedip. Ketukan kelima membuat monitor bertanya "who's there?".
+
+Karakter (tahap 2) masih kapsul sementara, dan bab lain masih **blockout sementara**. Cara membangun ulang aset ruangan ada di [`blender/README.md`](blender/README.md).
 
 ## Menjalankan di komputer
 
@@ -34,6 +41,7 @@ Lalu buka http://localhost:3000.
 - **Space / PageDown / panah bawah** untuk maju, **Shift+Space / PageUp / panah atas** untuk mundur.
 - **Home atau Cmd+↑** kembali ke awal ruangan.
 - **Menu WORK · ABOUT · CONTACT** melompat ke awal bab terkait.
+- **Klik kiri di dinding ruangan** (kursor berubah jadi kepalan tangan) untuk mengetuk. Ketukan hanya bisa di awal bab ruangan, sebelum lantainya mulai amblas.
 
 ## Tes
 
@@ -82,4 +90,6 @@ src/
   ui/           loader, OSD, menu, teks bab
   debug/        mode debug dan hook tes
 tests/e2e/      tes Playwright
+blender/        script Blender untuk semua aset 3D (lihat blender/README.md)
+public/models/  hasil ekspor: room.glb dan lightmap-nya
 ```

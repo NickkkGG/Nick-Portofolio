@@ -7,8 +7,9 @@ const FIELDS: (ParticleFieldProps & { name: string })[] = [
     group: 'room',
     count: 500,
     seed: 11,
-    min: [-2.8, 0.05, -2.8],
-    max: [2.8, 2.9, 2.8],
+    // The room runs from the back wall behind the desk (z = -1.18) to z = 3.
+    min: [-2.9, 0.05, -1.12],
+    max: [2.9, 2.9, 2.9],
     color: '#ffe7c4',
     size: 0.01,
     drift: [0.01, 0.006, -0.004],
