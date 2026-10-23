@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Local dot-folders: execution notes and throwaway measuring scripts.
     ".*/**",
+    // The Draco decoder, copied as-is from three/examples (see blender/README.md).
+    "public/draco/**",
   ]),
 ]);
 

@@ -18,8 +18,27 @@ export function ScrollDriver() {
     window.scrollTo(0, 0);
     store().setScroll(0, { programmatic: true });
 
-    const lenis = new Lenis({ infinite: true, autoRaf: true, autoResize: false });
+    const lenis = new Lenis({
+      infinite: true,
+      autoResize: false,
+      // Heavy and silky: the story glides on after the wheel stops instead of following each tick.
+      lerp: 0.065,
+      wheelMultiplier: 0.85,
+      // Touch gets the same inertia (and the infinite loop needs it on touch screens).
+      syncTouch: true,
+      syncTouchLerp: 0.06,
+      touchMultiplier: 1.2,
+      // The 3D frame loop ticks Lenis (see raf below), so scroll and camera move in the same frame.
+      autoRaf: false,
+    });
     lenis.stop();
+
+    // Fallback ticking while no 3D frame loop drives the scroll (before the scene, or without WebGL).
+    let driven = 0;
+    let frame = requestAnimationFrame(function tick(time) {
+      if (performance.now() - driven > 100) lenis.raf(time);
+      frame = requestAnimationFrame(tick);
+    });
 
     // Programmatic moves (jumps, resizes) must never count as a loop.
     let jumping = false;
@@ -42,6 +61,10 @@ export function ScrollDriver() {
       toChapter: (id) => {
         store().spikeVhs(0.8);
         jumpTo(chapterStartP(id) + 0.002);
+      },
+      raf: (time) => {
+        driven = performance.now();
+        lenis.raf(time);
       },
     };
     store().registerScroll(api);
@@ -107,6 +130,7 @@ export function ScrollDriver() {
     return () => {
       window.removeEventListener('resize', onResize);
       window.removeEventListener('keydown', onKeyDown);
+      cancelAnimationFrame(frame);
       lenis.destroy();
       store().registerScroll(null);
     };

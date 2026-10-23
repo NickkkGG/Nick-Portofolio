@@ -48,6 +48,23 @@ describe('camera paths', () => {
     expect(cameraPoseAt(LOOP_TELEPORT_P, 6).position[1]).toBeCloseTo(30);
   });
 
+  it('the camera glides through the keyframes it passes instead of stopping at each one', () => {
+    const speed = (p: number) => distance(cameraPoseAt(p + 1e-4, 6).position, cameraPoseAt(p - 1e-4, 6).position) / 2e-4;
+    // The fall: room floor, -4, -30, -58 m, all one way down.
+    for (const p of [0.13, 0.21]) expect(speed(p), `p=${p}`).toBeGreaterThan(150);
+    // Into the stack chapter the camera keeps creeping toward the bulb.
+    expect(speed(0.72)).toBeGreaterThan(5);
+  });
+
+  it('where the camera turns back it slows to a stop there, never swinging past the keyframe', () => {
+    // At p 0.82 it reaches (3, -177, 3) and heads back toward (0, -178.5, 7).
+    for (let p = 0.76; p < 0.9; p += 0.002) {
+      const [x, y] = cameraPoseAt(p, 6).position;
+      expect(x, `p=${p}`).toBeLessThanOrEqual(3 + 1e-9);
+      expect(y, `p=${p}`).toBeLessThanOrEqual(-177 + 1e-9);
+    }
+  });
+
   it('the camera holds still in front of each monitor', () => {
     const interval = (0.3 * 0.9) / 5; // p between two of six monitors
     for (let i = 0; i < 6; i++) {

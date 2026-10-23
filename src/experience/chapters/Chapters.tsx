@@ -1,23 +1,23 @@
-import { ContactBlockout } from './contact/ContactBlockout';
-import { DepthsBlockout } from './depths/DepthsBlockout';
-import { FallBlockout } from './fall/FallBlockout';
-import { LoopBlockout } from './loop/LoopBlockout';
-import { ProblemBlockout } from './problem/ProblemBlockout';
+import { Cassettes } from './contact/Cassettes';
+import { Depths } from './depths/Depths';
+import { Fall } from './fall/Fall';
+import { LoopRoof } from './loop/LoopRoof';
+import { Problem } from './problem/Problem';
 import { Room } from './room/Room';
-import { SpiralBlockout } from './spiral/SpiralBlockout';
-import { StackBlockout } from './stack/StackBlockout';
+import { Spiral } from './spiral/Spiral';
+import { Keycaps } from './stack/Keycaps';
 
 export function Chapters() {
   return (
     <>
       <Room />
-      <FallBlockout />
-      <SpiralBlockout />
-      <DepthsBlockout />
-      <ProblemBlockout />
-      <StackBlockout />
-      <ContactBlockout />
-      <LoopBlockout />
+      <Fall />
+      <Spiral />
+      <Depths />
+      <Problem />
+      <Keycaps />
+      <Cassettes />
+      <LoopRoof />
     </>
   );
 }

@@ -64,7 +64,7 @@ const FIELDS: (ParticleFieldProps & { name: string })[] = [
   {
     name: 'problem-sparks',
     group: 'problem',
-    count: 500,
+    count: 280,
     seed: 15,
     min: [-7, -183, -7],
     max: [7, -170, 7],
@@ -79,7 +79,7 @@ const FIELDS: (ParticleFieldProps & { name: string })[] = [
   {
     name: 'depths-moths',
     group: 'depths',
-    count: 400,
+    count: 220,
     seed: 16,
     min: [-4, -181, -4],
     max: [4, -174, 4],

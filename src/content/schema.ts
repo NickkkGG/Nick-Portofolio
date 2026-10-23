@@ -81,3 +81,8 @@ export function padProjects(projects: Project[], min = 6): Project[] {
 export function channelLabel(index: number): string {
   return `CH-${String(index + 1).padStart(2, '0')}`;
 }
+
+/** A contact address the way someone would scribble it on a tape label: no scheme, no www. */
+export function scribbledHref(href: string): string {
+  return href.replace(/^mailto:/, '').replace(/^https:\/\//, '').replace(/^www\./, '').replace(/\/$/, '');
+}

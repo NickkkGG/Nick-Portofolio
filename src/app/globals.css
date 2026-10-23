@@ -37,3 +37,18 @@ html::-webkit-scrollbar {
 html[data-cursor="knock"] canvas {
   cursor: url("/cursors/knock.svg") 16 12, pointer;
 }
+
+/* Over a keycap or a tape. */
+html[data-cursor="pointer"] canvas {
+  cursor: pointer;
+}
+
+/* Chapter changes: the story's words are seen through the same CRT glass as the picture
+   (--glass comes from the scroll, 0 everywhere else). */
+.glass-veil {
+  filter: blur(calc(var(--glass, 0) * 3px));
+  transform: scale(calc(1 + var(--glass, 0) * 0.035));
+  text-shadow:
+    calc(var(--glass, 0) * 5px) 0 rgb(255 70 110 / calc(var(--glass, 0) * 0.8)),
+    calc(var(--glass, 0) * -5px) 0 rgb(80 200 255 / calc(var(--glass, 0) * 0.8));
+}

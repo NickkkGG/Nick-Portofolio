@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { ScrollApi } from '@/scroll/types';
 import { initialExperienceState, useExperience } from './useExperience';
+import { BOUNDARY_SPIKE } from '@/timeline/transitions';
 
 const store = () => useExperience.getState();
 
@@ -11,7 +12,7 @@ describe('experience store', () => {
 
   it('play starts once, spikes the VHS and starts scrolling', () => {
     let starts = 0;
-    const api: ScrollApi = { start: () => starts++, stop: () => {}, jumpTo: () => {}, toChapter: () => {} };
+    const api: ScrollApi = { start: () => starts++, stop: () => {}, jumpTo: () => {}, toChapter: () => {}, raf: () => {} };
     store().registerScroll(api);
     store().play();
     store().play();
@@ -52,7 +53,7 @@ describe('experience store', () => {
     useExperience.setState({ vhsSpike: 0 });
     store().setScroll(0.259);
     store().setScroll(0.261);
-    expect(store().vhsSpike).toBe(0.35);
+    expect(store().vhsSpike).toBe(BOUNDARY_SPIKE);
   });
 
   it('programmatic jumps across chapters do not glitch', () => {

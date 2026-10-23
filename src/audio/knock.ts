@@ -1,24 +1,22 @@
 import type { CameraPose, Vec3 } from '@/experience/camera/types';
+import { audioContext, noiseBuffer } from './context';
 
 /**
  * A knock from inside the wall, synthesised (no sample to license): a dull knuckle
  * thump plus a dry wooden click, muffled by plaster, placed where the visitor clicked
  * and given a short tail of the small room. Audio failing must never break the page.
  */
-let context: AudioContext | null = null;
 let room: ConvolverNode | null = null;
 
 function audio(): AudioContext | null {
-  if (typeof window === 'undefined' || !('AudioContext' in window)) return null;
-  if (!context) {
-    context = new AudioContext();
+  const context = audioContext();
+  if (context && !room) {
     room = context.createConvolver();
     room.buffer = roomTail(context);
     const wet = context.createGain();
     wet.gain.value = 0.35;
     room.connect(wet).connect(context.destination);
   }
-  if (context.state === 'suspended') void context.resume();
   return context;
 }
 
@@ -37,13 +35,6 @@ function roomTail(ctx: AudioContext): AudioBuffer {
   return buffer;
 }
 
-function noise(ctx: AudioContext, seconds: number): AudioBuffer {
-  const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * seconds), ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-  return buffer;
-}
-
 function hit(ctx: AudioContext, out: AudioNode, at: number, strength: number) {
   const thump = ctx.createOscillator();
   thump.type = 'sine';
@@ -58,7 +49,7 @@ function hit(ctx: AudioContext, out: AudioNode, at: number, strength: number) {
   thump.stop(at + 0.2);
 
   const click = ctx.createBufferSource();
-  click.buffer = noise(ctx, 0.06);
+  click.buffer = noiseBuffer(ctx, 0.06);
   const band = ctx.createBiquadFilter();
   band.type = 'bandpass';
   band.frequency.value = 700 + Math.random() * 300;

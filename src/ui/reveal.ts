@@ -22,7 +22,7 @@ export const TEXT_WINDOWS = {
   problemBody: w(0.82, 0.92, 0.95, 1),
   stackList: w(0.05, 0.4, 0.9, 1),
   contactTagline: w(0.2, 0.45, 0.92, 1),
-  contactLinks: w(0.1, 0.3, 0.92, 1),
+  contactHint: w(0.3, 0.45, 0.92, 1),
 } satisfies Record<string, RevealWindow>;
 
 /** How much of a text is shown at chapter-local t: 0 hidden, 1 fully typed. */

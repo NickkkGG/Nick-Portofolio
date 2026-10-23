@@ -91,22 +91,16 @@ function StackText({ t }: { t: number }) {
 }
 
 function ContactText({ t }: { t: number }) {
-  const links = revealFraction(t, TEXT_WINDOWS.contactLinks);
+  // The links themselves are the tapes in the scene (and plain links in the content document).
+  const hint = revealFraction(t, TEXT_WINDOWS.contactHint);
   return (
     <div data-overlay-item className="absolute left-1/2 top-24 -translate-x-1/2 text-center font-osd">
       <p className="text-4xl">
         <TypedText text={site.tagline} fraction={revealFraction(t, TEXT_WINDOWS.contactTagline)} />
       </p>
-      {/* TEMPORARY: plain links until the VHS cassettes arrive in milestone 7 */}
-      <ul className="pointer-events-auto mt-4 flex justify-center gap-6 text-2xl tracking-widest">
-        {contact.map((link) => (
-          <li key={link.label}>
-            <a href={link.href} className="opacity-80 hover:opacity-100">
-              <TypedText text={link.label} fraction={links} />
-            </a>
-          </li>
-        ))}
-      </ul>
+      <p data-testid="tape-hint" className="mt-3 text-xl tracking-widest opacity-70">
+        <TypedText text={`▸ pick a tape · ${contact.length} on the shelf`} fraction={hint} />
+      </p>
     </div>
   );
 }
@@ -117,7 +111,7 @@ export function ChapterTexts() {
   const { chapterId, t } = useExperience(useShallow((s) => displayState(s.p)));
   if (!started) return null;
   return (
-    <div data-testid="chapter-texts" className="text-osd">
+    <div data-testid="chapter-texts" className="glass-veil text-osd">
       {chapterId === 'room' && <RoomText t={t} />}
       {chapterId === 'spiral' && <SpiralText t={t} />}
       {chapterId === 'problem' && <ProblemText t={t} />}

@@ -1,7 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useEffect, useRef } from 'react';
 import { useDebugMode } from '@/debug/useDebugMode';
+import { useExperience } from '@/store/useExperience';
+import { glassAt } from '@/timeline/transitions';
 import { ChapterTexts } from './ChapterTexts';
 import { Loader } from './Loader';
 import { Osd } from './Osd';
@@ -16,8 +19,18 @@ const DebugPanel = dynamic(() => import('@/debug/DebugPanel'), { ssr: false });
  */
 export function Overlay() {
   const debugMode = useDebugMode();
+  const root = useRef<HTMLDivElement>(null);
+  // The chapter texts sit behind the same glass as the picture at chapter changes (see globals.css).
+  useEffect(
+    () =>
+      useExperience.subscribe(
+        (s) => glassAt(s.p).amount,
+        (amount) => root.current?.style.setProperty('--glass', amount.toFixed(3)),
+      ),
+    [],
+  );
   return (
-    <div data-testid="overlay" className="pointer-events-none fixed inset-0 z-10">
+    <div ref={root} data-testid="overlay" className="pointer-events-none fixed inset-0 z-10">
       <ChapterTexts />
       <Osd />
       <Loader />

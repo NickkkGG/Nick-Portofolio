@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { content } from './index';
-import { channelLabel, contactSchema, padProjects, type Project, projectSchema, projectsSchema } from './schema';
+import { channelLabel, contactSchema, padProjects, type Project, projectSchema, projectsSchema, scribbledHref } from './schema';
 
 function noSignal(n: number): Project {
   const id = String(n).padStart(2, '0');
@@ -38,6 +38,12 @@ describe('content', () => {
   it('padProjects keeps longer lists unchanged', () => {
     const input = Array.from({ length: 8 }, (_, i) => noSignal(i + 1));
     expect(padProjects(input)).toEqual(input);
+  });
+
+  it('a tape label scribbles the address without scheme or www', () => {
+    expect(scribbledHref('mailto:hello@example.com')).toBe('hello@example.com');
+    expect(scribbledHref('https://www.linkedin.com/in/example/')).toBe('linkedin.com/in/example');
+    expect(scribbledHref('https://github.com/example')).toBe('github.com/example');
   });
 
   it('channelLabel uses two digits', () => {

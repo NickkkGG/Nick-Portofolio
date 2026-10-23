@@ -1,0 +1,203 @@
+import { useFrame } from '@react-three/fiber';
+import { useEffect, useMemo, useRef } from 'react';
+import { CanvasTexture, type Group, type Mesh, type PointLight, ShaderMaterial, SRGBColorSpace, type Texture, UniformsLib, UniformsUtils } from 'three';
+import type { Vec3 } from '@/experience/camera/types';
+import { useExperience } from '@/store/useExperience';
+import { localProgress } from '@/timeline/resolve';
+import { hangingSway, surgeLevel } from './motion';
+
+/** The model is a true-size 19" CRT; the project world's monitors are giants. */
+export const CRT_SCALE = 4.5;
+/** Its cable rises 10 m in the model, so the hang point sits this far above the screen. */
+const CABLE = 10 * CRT_SCALE;
+
+const vertexShader = /* glsl */ `
+#include <fog_pars_vertex>
+varying vec2 vUv;
+varying vec3 vWorldPos;
+varying vec3 vWorldNormal;
+void main() {
+  vUv = uv;
+  vec4 world = modelMatrix * vec4(position, 1.0);
+  vWorldPos = world.xyz;
+  vWorldNormal = normalize(mat3(modelMatrix) * normal);
+  vec4 mvPosition = viewMatrix * world;
+  gl_Position = projectionMatrix * mvPosition;
+  #include <fog_vertex>
+}
+`;
+
+// Live TV static on a curved tube behind smudged glass: noise, scanlines, a rolling bar,
+// the channel label, and the dark world mirrored in the glass.
+const fragmentShader = /* glsl */ `
+#include <common>
+#include <fog_pars_fragment>
+uniform float uTime;
+uniform float uFocus;
+uniform float uSeed;
+uniform float uSurge;
+uniform float uEnvScale;
+uniform sampler2D uLabel;
+uniform sampler2D uEnv;
+uniform sampler2D uSmudge;
+varying vec2 vUv;
+varying vec3 vWorldPos;
+varying vec3 vWorldNormal;
+
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+void main() {
+  vec2 c = vUv - 0.5;
+  vec2 uv = 0.5 + c * (1.0 + 0.12 * dot(c, c));
+  float frame = floor(uTime * 24.0);
+  float noise = hash(floor(uv * vec2(260.0, 200.0)) + frame * 1.37 + uSeed * 17.0);
+  float scan = 0.8 + 0.2 * sin(uv.y * 200.0 * PI);
+  float bar = 1.0 - smoothstep(0.0, 0.08, abs(fract(uv.y + uTime * 0.11 + uSeed) - 0.5));
+  vec3 color = vec3(0.12 + 0.55 * noise) * scan + 0.18 * bar;
+  vec4 label = texture2D(uLabel, uv);
+  color = mix(color, label.rgb * (0.85 + 0.15 * hash(vec2(frame, uSeed))), label.a * (1.0 - uSurge));
+  // A surge: every screen tears into bright static at once.
+  color = mix(color, vec3(0.25 + 0.9 * noise), uSurge);
+  float tube = 1.0 - smoothstep(0.32, 0.72, length(c * vec2(1.0, 1.25)));
+  color *= tube * mix(0.3, 2.0, max(uFocus, uSurge * 0.8)) * vec3(0.82, 0.95, 1.0);
+
+  vec3 n = normalize(vWorldNormal);
+  vec3 v = normalize(cameraPosition - vWorldPos);
+  vec2 smudge = texture2D(uSmudge, vUv * vec2(1.3, 1.0) + uSeed * 0.37).rg;
+  vec3 env = textureLod(uEnv, equirectUv(reflect(-v, n)), mix(1.5, 5.5, smudge.r)).rgb * uEnvScale;
+  float fresnel = 0.04 + 0.96 * pow(1.0 - clamp(dot(n, v), 0.0, 1.0), 5.0);
+  color = color * (1.0 - 0.3 * smudge.g) + env * (fresnel * 1.4 + 0.05 * smudge.r);
+  gl_FragColor = vec4(color, 1.0);
+  #include <fog_fragment>
+}
+`;
+
+function paintLabel(canvas: HTMLCanvasElement, title: string, channel: string) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const family = getComputedStyle(document.documentElement).getPropertyValue('--font-vt323').trim() || 'monospace';
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `92px ${family}`;
+  // Dark caption box behind the text, like a TV's own on-screen display.
+  const boxWidth = Math.min(canvas.width * 0.9, ctx.measureText(title).width + 60);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+  ctx.fillRect((canvas.width - boxWidth) / 2, canvas.height * 0.3, boxWidth, canvas.height * 0.46);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(title, canvas.width / 2, canvas.height * 0.44);
+  ctx.font = `54px ${family}`;
+  ctx.fillText(channel, canvas.width / 2, canvas.height * 0.66);
+}
+
+/** One hanging monitor: its own copy of the model, its own picture, its own swing. */
+class CrtRig {
+  readonly root: Group;
+  private readonly screen: ShaderMaterial;
+  private readonly canvas = document.createElement('canvas');
+  private readonly label: CanvasTexture;
+
+  constructor(template: Group, seed: number, env: Texture, envScale: number, smudge: Texture) {
+    this.root = template.clone(true);
+    this.root.scale.setScalar(CRT_SCALE);
+    this.root.position.set(0, -CABLE, 0);
+    this.canvas.width = 512;
+    this.canvas.height = 384;
+    this.label = new CanvasTexture(this.canvas);
+    this.label.colorSpace = SRGBColorSpace;
+    // glTF UVs start at the top, like the canvas.
+    this.label.flipY = false;
+    this.screen = new ShaderMaterial({
+      vertexShader,
+      fragmentShader,
+      fog: true,
+      uniforms: UniformsUtils.merge([
+        UniformsLib.fog,
+        {
+          uTime: { value: 0 },
+          uFocus: { value: 0 },
+          uSeed: { value: seed },
+          uSurge: { value: 0 },
+          uEnvScale: { value: envScale },
+          uLabel: { value: null },
+          uEnv: { value: null },
+          uSmudge: { value: null },
+        },
+      ]),
+    });
+    // merge() clones uniform values; textures must stay shared, so set them afterwards.
+    this.screen.uniforms.uLabel.value = this.label;
+    this.screen.uniforms.uEnv.value = env;
+    this.screen.uniforms.uSmudge.value = smudge;
+    this.root.traverse((object) => {
+      const mesh = object as Mesh;
+      if (mesh.isMesh && mesh.userData.runtime === 'screen') mesh.material = this.screen;
+    });
+  }
+
+  paint(title: string, channel: string) {
+    paintLabel(this.canvas, title, channel);
+    this.label.needsUpdate = true;
+  }
+
+  update(time: number, focus: number, surge: number) {
+    this.screen.uniforms.uTime.value = time;
+    this.screen.uniforms.uFocus.value = focus;
+    this.screen.uniforms.uSurge.value = surge;
+  }
+
+  dispose() {
+    this.screen.dispose();
+    this.label.dispose();
+  }
+}
+
+export interface HangingCrtProps {
+  template: Group;
+  env: Texture;
+  envScale: number;
+  smudge: Texture;
+  /** Where the screen's centre hangs. */
+  position: Vec3;
+  /** Rotation around Y; the screen faces local +Z. */
+  angle: number;
+  seed: number;
+  title: string;
+  channel: string;
+  /** Screen brightness from the spiral chapter's local t: 0 dim, 1 focused. */
+  focusAt: (t: number) => number;
+  /** Main monitors throw their glow onto the cables around them. */
+  castLight?: boolean;
+}
+
+/** An old CRT hanging from its cable, showing NO SIGNAL static until a project tunes in. */
+export function HangingCrt({ template, env, envScale, smudge, position, angle, seed, title, channel, focusAt, castLight = false }: HangingCrtProps) {
+  const pivot = useRef<Group>(null);
+  const light = useRef<PointLight>(null);
+  const rig = useMemo(() => new CrtRig(template, seed, env, envScale, smudge), [template, seed, env, envScale, smudge]);
+
+  useEffect(() => {
+    rig.paint(title, channel);
+    void document.fonts?.ready.then(() => rig.paint(title, channel));
+    return () => rig.dispose();
+  }, [rig, title, channel]);
+
+  useFrame(() => {
+    const { p, time } = useExperience.getState();
+    const focus = focusAt(localProgress(p, 'spiral'));
+    rig.update(time, focus, surgeLevel(time));
+    const [x, z] = hangingSway(time, seed, CABLE);
+    pivot.current?.rotation.set(x, angle, z);
+    if (light.current) light.current.intensity = 5 * focus;
+  });
+
+  // The pivot is the top of the cable, so the whole monitor swings from there.
+  return (
+    <group ref={pivot} position={[position[0], position[1] + CABLE, position[2]]} rotation={[0, angle, 0]}>
+      <primitive object={rig.root} />
+      {castLight && <pointLight ref={light} position={[0, -CABLE, 1.9]} color="#bfe6ff" intensity={0} distance={9} decay={1} />}
+    </group>
+  );
+}
