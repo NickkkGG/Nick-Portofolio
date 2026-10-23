@@ -1,35 +1,12 @@
-# Portofolio 3D "Analog Horror"
+# Nick Portofolio
 
-Website portofolio satu halaman yang digerakkan scroll. Pengunjung mengikuti seorang karakter yang jatuh ke dalam pikirannya sendiri, lalu kembali ke ruangan awal dalam loop tanpa ujung. Seluruh tampilannya bergaya kaset VHS terkutuk.
+Portofolio 3D satu halaman yang digerakkan scroll. Masih terus dikembangkan, tapi versi terbarunya sudah live di:
 
-## Status
+**https://nick-project-1.vercel.app**
 
-**Tahap 1 dari 8 (kerangka) selesai.** Yang sudah ada:
-- Alur scroll lengkap, bisa maju-mundur, dan loop tanpa sambungan yang terlihat.
-- Efek VHS dasar.
-- Loader dengan kartu peringatan dan tombol ▶ PLAY.
-- OSD ala kamera perekam dan menu.
-- Teks tiap bab dengan efek diketik.
+Pengunjung mengikuti seorang karakter yang jatuh dari kamarnya ke dunia di bawah lantai, melewati project, cerita, tools, dan kontak, lalu kembali ke kamar dalam loop tanpa ujung. Semuanya terlihat seperti rekaman kaset VHS lama. Paling enak dibuka di laptop atau PC, pakai headphone.
 
-**Tahap 3 (ruangan final) selesai.** Ruangan pembuka memakai aset Blender asli:
-- Dinding plester mengelupas dengan noda lembap, lantai beton, meja kayu, kursi kulit, monitor CRT, lampu meja dengan bohlam telanjang, jendela besi dengan kerai, radiator, rak berisi buku bersampul dan berjudul, lemari, PC, kabel, poster, dan jaring laba-laba.
-- Tekstur PBR berlisensi CC0, dengan cahaya yang di-bake di Blender (bulan, lampu, dan layar terpisah, jadi lampu bisa berkedip live).
-- Lampu yang berkedip, maksimal 3 kali per detik.
-- Monitor yang mengetik source code website ini sendiri.
-- Ketukan hantu: klik dinding untuk mengetuk. Ada suaranya, debu dan serpihan cat berjatuhan, lalu lampu berkedip. Ketukan kelima membuat monitor bertanya "who's there?".
-
-**Dunia di bawah ruangan sedang direview.** Semua bab setelah ruangan sekarang memakai aset Blender asli:
-- **Jatuh:** bongkahan lantai beton (lengkap dengan besi beton) berjatuhan, lampu kamar bersinar dari lubang di atas.
-- **Work:** pilar kabel basah yang terpilin, dengan keyboard, radio, dan TV terjepit di dalamnya. Enam CRT raksasa tergantung (layar statis + judul project), 42 monitor redup di kejauhan, pilar-pilar kabel lain, kabel yang menjuntai, menara TV, dan berkas cahaya.
-- **Dasar (About, Stack, Contact):** lantai beton tergenang air tipis yang memantulkan semuanya (pantulan asli, plus riak dari tetesan air), reruntuhan, TV tenggelam yang layarnya masih menyala, dan bohlam besar di kabel 6 m.
-- **About:** sepuluh "problem" merah (jendela error yang glitch, rambu peringatan, pecahan) mengitari karakter yang duduk di atas TV mati, lalu berubah jadi keycap begitu bohlam menyala.
-- **Stack:** keycap bertuliskan nama tool mengitari bohlam. Arahkan kursor ke salah satunya untuk menekannya.
-- **Contact:** empat kaset VHS dalam sampul karton naik dari air. Arahkan kursor untuk menarik kasetnya keluar, klik untuk membuka link.
-- **Loop:** atap beton dengan retakan yang menyala oleh lampu kamar di bawahnya.
-- **Scroll** lebih berat dan halus, dan kamera meluncur tanpa berhenti di setiap titik.
-- **Transisi antar bab** lewat "kaca tabung CRT": gambar membesar di tengah, warnanya terpecah di pinggir, ada noda sidik jari di kaca, dan riak pelangi seperti TV lama yang di-degauss.
-
-Karakter (tahap 2) masih kapsul sementara. Cara membangun ulang semua aset ada di [`blender/README.md`](blender/README.md).
+Dibangun dengan Next.js, React Three Fiber, Three.js, dan efek postprocessing buatan sendiri. Semua aset 3D dibuat lewat script Python di Blender (lihat [`blender/README.md`](blender/README.md)).
 
 ## Menjalankan di komputer
 
