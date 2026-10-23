@@ -48,14 +48,16 @@ Tes `storyboard.spec.ts` menyimpan screenshot tiap bab ke `tests/e2e/__storyboar
 
 ## Deploy ke internet (Vercel)
 
-Kamu cukup login sekali, lalu deploy dengan satu perintah:
+Situsnya live di https://nick-project-1.vercel.app (project Vercel `nick-project-1`).
+
+Kamu cukup login sekali, lalu deploy ke project itu dengan satu perintah:
 
 ```bash
 npx vercel login
-npx vercel --prod
+npx vercel deploy --prod --project nick-project-1
 ```
 
-`vercel login` akan membuka browser untuk login, misalnya dengan akun GitHub. Saat ditanya pengaturan proyek, pilih nilai default (Vercel mengenali Next.js secara otomatis). Hasil akhirnya berupa URL publik seperti `https://nama-proyek.vercel.app`.
+`vercel login` akan membuka browser untuk login, misalnya dengan akun GitHub. Opsi `--project` jangan dihapus: folder ini tidak di-link ke Vercel, jadi tanpa opsi itu Vercel akan menawarkan bikin project baru, dan situs yang sudah live tidak ikut ter-update.
 
 Alternatifnya: push repo ini ke GitHub, lalu import di https://vercel.com/new. Setelah itu, setiap `git push` akan deploy otomatis.
 
