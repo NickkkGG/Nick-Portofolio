@@ -1,4 +1,4 @@
-import { useGLTF, useTexture } from '@react-three/drei';
+import { useTexture } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import {
@@ -15,6 +15,7 @@ import {
 } from 'three';
 import { content } from '@/content';
 import { channelLabel } from '@/content/schema';
+import { CRT_AO, MODELS, useKtx2, useModel } from '@/experience/assets';
 import { LightShaft } from '@/experience/atmosphere/LightShaft';
 import { smoothstep } from '@/lib/math';
 import { mulberry32 } from '@/lib/random';
@@ -26,14 +27,12 @@ import { HangingCrt } from './HangingCrt';
 import { focusedIndex, helixSlots, monitorFocus, SPIRAL } from './helix';
 import { surgeLevel } from './motion';
 
-const WORLD = '/models/spiral.glb';
-const CRT = '/models/crt.glb';
-const DRACO = '/draco/';
+/** The AO is KTX2 (CRT_AO); the probe stays WebP, an equirect for three's PMREM. */
 const MAPS = {
   probe: '/models/spiral-probe.webp',
-  ao: '/models/crt-ao.webp',
   smudge: '/models/crt-smudge.webp',
 };
+type Maps = Record<keyof typeof MAPS | keyof typeof CRT_AO, Texture>;
 
 const PROJECTS = content.projects;
 const SLOTS = helixSlots(PROJECTS.length);
@@ -73,7 +72,7 @@ class SpiralKit {
   /** The far pillars, slung cables and TV towers: they stay on the horizon down in the depths too. */
   readonly far = new Group();
 
-  constructor(world: Group, crt: Group, maps: Record<keyof typeof MAPS, Texture>, probeScale: number) {
+  constructor(world: Group, crt: Group, maps: Maps, probeScale: number) {
     const { probe, ao } = maps;
     probe.mapping = EquirectangularReflectionMapping;
     probe.colorSpace = SRGBColorSpace;
@@ -138,9 +137,11 @@ export function Spiral() {
   const character = useRef<Mesh>(null);
   const glow = useRef<PointLight>(null);
   const glowSpots = useRef<(Object3D | null)[]>([]);
-  const world = useGLTF(WORLD, DRACO);
-  const crt = useGLTF(CRT, DRACO);
-  const maps = useTexture(MAPS);
+  const world = useModel(MODELS.spiral);
+  const crt = useModel(MODELS.crt);
+  const webp = useTexture(MAPS);
+  const ao = useKtx2(CRT_AO);
+  const maps = useMemo(() => ({ ...webp, ...ao }), [webp, ao]);
   const probeScale = Number(world.scene.userData.probe_scale ?? 1);
   const kit = useMemo(() => new SpiralKit(world.scene, crt.scene, maps, probeScale), [world.scene, crt.scene, maps, probeScale]);
 
@@ -252,6 +253,3 @@ export function Spiral() {
     </>
   );
 }
-
-useGLTF.preload(WORLD, DRACO);
-useGLTF.preload(CRT, DRACO);

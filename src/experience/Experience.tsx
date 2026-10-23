@@ -1,8 +1,9 @@
 'use client';
 
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
 import { Suspense } from 'react';
 import { DebugStats } from '@/debug/DebugStats';
+import { loadAssets } from './assets';
 import { AtmosphereDriver } from './atmosphere/AtmosphereDriver';
 import { Backdrop } from './atmosphere/Backdrop';
 import { Particles } from './atmosphere/Particles';
@@ -12,6 +13,12 @@ import { EffectsStack } from './effects/EffectsStack';
 import { FrameClock } from './FrameClock';
 import { StableLights } from './StableLights';
 import { Warmup } from './Warmup';
+
+/** Renders first: the KTX2 transcoder needs the renderer, then every download starts at once. */
+function Assets() {
+  loadAssets(useThree((s) => s.gl));
+  return null;
+}
 
 export default function Experience() {
   return (
@@ -23,6 +30,7 @@ export default function Experience() {
       <color attach="background" args={['#050607']} />
       <fogExp2 attach="fog" args={['#050607', 0.015]} />
       <ambientLight intensity={0.04} />
+      <Assets />
       {/* Mount order is useFrame order: clock, then camera, then everything that follows it. */}
       <FrameClock />
       <CameraRig />

@@ -1,4 +1,3 @@
-import { useGLTF } from '@react-three/drei';
 import { type ThreeEvent, useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import {
@@ -18,8 +17,8 @@ import type { StackItem } from '@/content/schema';
 import { damp, smoothstep } from '@/lib/math';
 import { useExperience } from '@/store/useExperience';
 import { resolve } from '@/timeline/resolve';
+import { MODELS, useModel } from '@/experience/assets';
 import { keycapState } from '../depths/choreography';
-import { DEPTHS_MODEL } from '../depths/Depths';
 import { useChapterFrame } from '../useChapterFrame';
 
 const ITEMS = content.stack;
@@ -175,7 +174,7 @@ function setPointer(on: boolean) {
 export function Keycaps() {
   const ref = useRef<Group>(null);
   const fill = useRef<PointLight>(null);
-  const { scene } = useGLTF(DEPTHS_MODEL);
+  const { scene } = useModel(MODELS.depths);
   const kit = useMemo(() => new KeycapKit(scene), [scene]);
 
   useEffect(() => {

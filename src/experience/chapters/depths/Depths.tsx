@@ -1,4 +1,3 @@
-import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import {
@@ -14,6 +13,7 @@ import {
   type PointLight,
   SRGBColorSpace,
 } from 'three';
+import { MODELS, useModel } from '@/experience/assets';
 import { LightShaft } from '@/experience/atmosphere/LightShaft';
 import { surgeLevel } from '@/experience/chapters/spiral/motion';
 import { createStaticScreens } from '@/experience/materials/staticScreens';
@@ -22,7 +22,6 @@ import { useChapterFrame } from '../useChapterFrame';
 import { BULB_Y, bulbDrop, bulbIntensity, characterPose, dripRipples, FLOOR_Y, SEAT_TOP } from './choreography';
 import { WetFloor } from './wetFloor';
 
-export const DEPTHS_MODEL = '/models/depths.glb';
 const WIRE = 6;
 /** The lamp swings from the top of its cord, like a pendulum of that length (~4.9 s). */
 const SWING_HZ = 1 / (2 * Math.PI * Math.sqrt(WIRE / 9.8));
@@ -133,7 +132,7 @@ export function Depths() {
   const light = useRef<PointLight>(null);
   const hemi = useRef<HemisphereLight>(null);
   const character = useRef<Mesh>(null);
-  const { scene } = useGLTF(DEPTHS_MODEL);
+  const { scene } = useModel(MODELS.depths);
   const kit = useMemo(() => new DepthsKit(scene), [scene]);
   useEffect(() => () => kit.dispose(), [kit]);
   useChapterFrame('depths', ref);
@@ -211,5 +210,3 @@ export function Depths() {
     </group>
   );
 }
-
-useGLTF.preload(DEPTHS_MODEL);

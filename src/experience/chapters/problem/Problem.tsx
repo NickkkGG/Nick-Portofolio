@@ -1,12 +1,11 @@
-import { useGLTF } from '@react-three/drei';
 import { useEffect, useMemo, useRef } from 'react';
 import { CanvasTexture, Color, Group, type Mesh, type MeshStandardMaterial, type Object3D, type PointLight, ShaderMaterial, UniformsLib, UniformsUtils } from 'three';
 import { content } from '@/content';
 import type { Vec3 } from '@/experience/camera/types';
 import { smoothstep } from '@/lib/math';
 import { useExperience } from '@/store/useExperience';
+import { MODELS as MODEL_FILES, useModel } from '@/experience/assets';
 import { problemPose } from '../depths/choreography';
-import { DEPTHS_MODEL } from '../depths/Depths';
 import { useChapterFrame } from '../useChapterFrame';
 
 /** One problem per tool in the stack: each one becomes that tool's keycap. */
@@ -192,7 +191,7 @@ class ProblemKit {
 export function Problem() {
   const ref = useRef<Group>(null);
   const light = useRef<PointLight>(null);
-  const { scene } = useGLTF(DEPTHS_MODEL);
+  const { scene } = useModel(MODEL_FILES.depths);
   const kit = useMemo(() => new ProblemKit(scene), [scene]);
 
   useEffect(() => {

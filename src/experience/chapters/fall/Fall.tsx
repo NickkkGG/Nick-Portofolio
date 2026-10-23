@@ -1,4 +1,3 @@
-import { useGLTF } from '@react-three/drei';
 import { useMemo, useRef } from 'react';
 import { AdditiveBlending, Group, type Mesh, type Object3D } from 'three';
 import { content } from '@/content';
@@ -6,7 +5,7 @@ import { LightShaft } from '@/experience/atmosphere/LightShaft';
 import { cameraPoseAt } from '@/experience/camera/paths';
 import { smoothstep } from '@/lib/math';
 import { mulberry32 } from '@/lib/random';
-import { DEPTHS_MODEL } from '../depths/Depths';
+import { MODELS, useModel } from '@/experience/assets';
 import { useChapterFrame } from '../useChapterFrame';
 
 /** depths.glb has six broken pieces of the room's floor slab, Fall_Chunk_0..5. */
@@ -81,7 +80,7 @@ const HOLE_GLOW = {
 export function Fall() {
   const ref = useRef<Group>(null);
   const character = useRef<Mesh>(null);
-  const { scene } = useGLTF(DEPTHS_MODEL);
+  const { scene } = useModel(MODELS.depths);
   const kit = useMemo(() => new FallKit(scene), [scene]);
 
   useChapterFrame('fall', ref, (t, p) => {

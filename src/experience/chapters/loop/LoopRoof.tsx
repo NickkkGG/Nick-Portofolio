@@ -1,4 +1,3 @@
-import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import {
@@ -22,7 +21,7 @@ import { lampLevel } from '@/experience/flicker';
 import { lerp } from '@/lib/math';
 import { mulberry32 } from '@/lib/random';
 import { useExperience } from '@/store/useExperience';
-import { DEPTHS_MODEL } from '../depths/Depths';
+import { MODELS, useModel } from '@/experience/assets';
 import { useChapterFrame } from '../useChapterFrame';
 
 /** The room's ceiling is at 3 m (blender/scripts/room.py); the roof sits just above it, out of sight from inside. */
@@ -185,7 +184,7 @@ class RoofKit {
 /** The loop (spec §3.10): falling back onto the room from above, toward the glowing crack. */
 export function LoopRoof() {
   const ref = useRef<Group>(null);
-  const { scene } = useGLTF(DEPTHS_MODEL);
+  const { scene } = useModel(MODELS.depths);
   const kit = useMemo(() => new RoofKit(scene), [scene]);
   useEffect(() => () => kit.dispose(), [kit]);
   useChapterFrame('loop', ref);

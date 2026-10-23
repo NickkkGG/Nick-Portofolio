@@ -1,4 +1,4 @@
-import { useGLTF, useTexture } from '@react-three/drei';
+import { useTexture } from '@react-three/drei';
 import { type ThreeEvent } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import {
@@ -19,6 +19,7 @@ import {
 } from 'three';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { playKnock } from '@/audio/knock';
+import { MODELS, ROOM_LIGHTMAPS, useKtx2, useModel } from '@/experience/assets';
 import { LightShaft } from '@/experience/atmosphere/LightShaft';
 import type { Vec3 } from '@/experience/camera/types';
 import { lampLevel } from '@/experience/flicker';
@@ -31,14 +32,8 @@ import { RoomScreen } from './RoomScreen';
 
 RectAreaLightUniformsLib.init();
 
-const MODEL = '/models/room.glb';
+/** The lightmaps are KTX2 (ROOM_LIGHTMAPS); the probe stays WebP, an equirect for three's PMREM. */
 const MAPS = {
-  aBase: '/models/room-lm-a-base.webp',
-  aLamp: '/models/room-lm-a-lamp.webp',
-  aScreen: '/models/room-lm-a-screen.webp',
-  bBase: '/models/room-lm-b-base.webp',
-  bLamp: '/models/room-lm-b-lamp.webp',
-  bScreen: '/models/room-lm-b-screen.webp',
   probe: '/models/room-probe.webp',
   smudge: '/models/crt-smudge.webp',
 };
@@ -114,7 +109,7 @@ function setKnockCursor(on: boolean) {
   else delete document.documentElement.dataset.cursor;
 }
 
-type MapKey = keyof typeof MAPS;
+type MapKey = keyof typeof MAPS | keyof typeof ROOM_LIGHTMAPS;
 type Scales = Record<'A' | 'B', AtlasMaps['scale']> & { probe: number };
 
 /**
@@ -207,8 +202,10 @@ export function Room() {
   const lampLight = useRef<PointLight>(null);
   const screenLight = useRef<RectAreaLight>(null);
   const bursts = useRef<DustBurst[]>([]);
-  const { scene } = useGLTF(MODEL, false, false);
-  const textures = useTexture(MAPS);
+  const { scene } = useModel(MODELS.room);
+  const maps = useTexture(MAPS);
+  const lightmaps = useKtx2(ROOM_LIGHTMAPS);
+  const textures = useMemo(() => ({ ...maps, ...lightmaps }), [maps, lightmaps]);
 
   const scales = useMemo(() => JSON.parse(String(scene.userData.lightmaps)) as Scales, [scene]);
   const layout = useMemo(() => readLayout(scene), [scene]);
@@ -289,5 +286,3 @@ export function Room() {
     </group>
   );
 }
-
-useGLTF.preload(MODEL, false, false);

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rebuilds the room from nothing: geometry, preview, light bake, GLB.
+# Rebuilds the room from nothing: geometry, preview, light bake, GLB, KTX2 textures.
 #   blender/build_room.sh [samples]     (samples per texel for the bake, default 1024)
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -9,3 +9,4 @@ SAMPLES=${1:-1024}
 "$BLENDER" -b blender/source/room.blend -P blender/scripts/render_preview.py -- room 128
 "$BLENDER" -b blender/source/room.blend -P blender/scripts/bake.py -- "$SAMPLES"
 "$BLENDER" -b blender/source/room_baked.blend -P blender/scripts/export.py
+node blender/scripts/compress_textures.mjs

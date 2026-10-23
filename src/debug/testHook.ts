@@ -28,6 +28,8 @@ export interface ExperienceTestHook {
   play(): void;
   jumpTo(p: number): void;
   freezeTime(on: boolean): void;
+  /** Sets the scene clock, so frozen screenshots from different runs show the same moment. */
+  setTime(seconds: number): void;
   getState(): ExperienceSnapshot;
   /** Resolves after `n` animation frames. */
   waitFrames(n: number): Promise<void>;
@@ -49,6 +51,7 @@ export function createTestHook(): ExperienceTestHook {
       // Screenshots should show the base VHS look, not the spike right after PLAY.
       if (on) useExperience.setState({ vhsSpike: 0 });
     },
+    setTime: (seconds) => useExperience.setState({ time: seconds }),
     getState: () => {
       const s = store();
       const { chapter, t } = resolve(s.p);
