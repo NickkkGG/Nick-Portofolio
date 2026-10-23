@@ -116,11 +116,13 @@ def _fresh(bm):
 
 
 def _place(bm, center, rot, material):
+    """Rotates and moves the fresh primitive; material None keeps per-face materials."""
     verts = _fresh(bm)
     fresh = set(verts)
-    for face in bm.faces:
-        if face.verts[0] in fresh:
-            face.material_index = material
+    if material is not None:
+        for face in bm.faces:
+            if face.verts[0] in fresh:
+                face.material_index = material
     bmesh.ops.transform(bm, matrix=rotation(rot), verts=verts)
     bmesh.ops.translate(bm, vec=V(*center), verts=verts)
     _mark_all(bm)
@@ -185,9 +187,14 @@ def lathe(bm, profile, center, segments=32, rot=(0.0, 0.0, 0.0), material=0, clo
     return _place(bm, center, rot, material)
 
 
-def tube(bm, points, radius, sides=8, material=0, caps=True):
-    """Round tube along a polyline of three.js points (cables, wires, rods)."""
+def tube(bm, points, radius, sides=8, material=0, caps=True, uv_tile=None):
+    """Round tube along a polyline of three.js points (cables, wires, rods).
+
+    radius may be one number or one per point (tapering). With uv_tile (metres per texture
+    repeat), UVs run along the tube (u) and around it (v), so cable textures follow the cable.
+    """
     pts = [V(*p) for p in points]
+    radii = list(radius) if isinstance(radius, (list, tuple)) else [radius] * len(pts)
     rings = []
     normal = None
     for i, p in enumerate(pts):
@@ -205,10 +212,20 @@ def tube(bm, points, radius, sides=8, material=0, caps=True):
             # Parallel transport keeps the rings from twisting along the tube.
             normal = (normal - t * normal.dot(t)).normalized()
         binormal = t.cross(normal).normalized()
-        rings.append([bm.verts.new(p + radius * (math.cos(2 * math.pi * k / sides) * normal + math.sin(2 * math.pi * k / sides) * binormal)) for k in range(sides)])
-    for r0, r1 in zip(rings, rings[1:]):
+        r = radii[i]
+        rings.append([bm.verts.new(p + r * (math.cos(2 * math.pi * k / sides) * normal + math.sin(2 * math.pi * k / sides) * binormal)) for k in range(sides)])
+    uv = bm.loops.layers.uv.get("UVMap") or bm.loops.layers.uv.new("UVMap") if uv_tile else None
+    along = [0.0]
+    for a, b in zip(pts, pts[1:]):
+        along.append(along[-1] + (b - a).length)
+    for i, (r0, r1) in enumerate(zip(rings, rings[1:])):
         for k in range(sides):
-            bm.faces.new((r0[k], r0[(k + 1) % sides], r1[(k + 1) % sides], r1[k]))
+            face = bm.faces.new((r0[k], r0[(k + 1) % sides], r1[(k + 1) % sides], r1[k]))
+            if uv is not None:
+                around = 2 * math.pi * radii[i] / uv_tile
+                coords = [(along[i], k), (along[i], k + 1), (along[i + 1], k + 1), (along[i + 1], k)]
+                for loop, (u, kk) in zip(face.loops, coords):
+                    loop[uv].uv = (u / uv_tile, kk / sides * around)
     if caps:
         bm.faces.new(list(reversed(rings[0])))
         bm.faces.new(rings[-1])
@@ -243,6 +260,68 @@ def padded(bm, outline, thickness, center, rot=(0.0, 0.0, 0.0), bevel=0.02, mate
     edges = list({e for f in (f_front, f_back) for e in f.edges})
     bmesh.ops.bevel(bm, geom=edges, offset=bevel, segments=3, profile=0.5, affect="EDGES", clamp_overlap=True)
     return _place(bm, center, rot, material)
+
+
+def book(bm, size, center, rot=(0.0, 0.0, 0.0), design=0, designs=16, cover=0, pages=1):
+    """A hardback: two cover boards, a rounded spine and a page block set back inside them.
+
+    size is (thickness, height, depth) in three.js metres; locally the spine faces +Z and the
+    front cover +X. UVs point into the book atlas (art.book_atlas): column `design`, spine in
+    its top three quarters, plain cloth for the covers in the bottom quarter. Page faces tile
+    the page-edge texture, with the sheet lines running along the edges.
+    """
+    t, h, d = size
+    board = min(0.0028, t * 0.12)
+    overhang = 0.003
+    uv = bm.loops.layers.uv.get("UVMap") or bm.loops.layers.uv.new("UVMap")
+    local = lambda co: (co.x, co.z, -co.y)  # Blender -> three.js
+    col0, col1 = (design + 0.04) / designs, (design + 0.96) / designs
+
+    def cover_uv(face):
+        for loop in face.loops:
+            x, y, z = local(loop.vert.co)
+            loop[uv].uv = (col0 + (col1 - col0) * (z / d + 0.5), 0.01 + 0.23 * (y / h + 0.5))
+
+    def page_uv(face):
+        n = face.normal
+        for loop in face.loops:
+            x, y, z = local(loop.vert.co)
+            if abs(n.z) > 0.5:  # three.js Y: top and bottom of the block
+                loop[uv].uv = (z / 0.12, x / 0.03)
+            elif abs(n.y) > 0.5:  # three.js Z: fore-edge
+                loop[uv].uv = (y / 0.12, x / 0.03)
+            else:
+                loop[uv].uv = (y / 0.12, z / 0.12)
+
+    def cube(sx, sy, sz, cx, cy, cz):
+        geom = bmesh.ops.create_cube(bm, size=1.0)
+        bmesh.ops.scale(bm, vec=D(sx, sy, sz), verts=geom["verts"])
+        bmesh.ops.translate(bm, vec=V(cx, cy, cz), verts=geom["verts"])
+        return {f for v in geom["verts"] for f in v.link_faces}
+
+    for face in cube(t - 2 * board, h - 2 * overhang, d - overhang - 0.004, 0, 0, -(overhang + 0.004) / 2):
+        face.material_index = pages
+        face.normal_update()
+        page_uv(face)
+    for side in (1, -1):
+        for face in cube(board, h, d, side * (t / 2 - board / 2), 0, 0):
+            face.material_index = cover
+            cover_uv(face)
+    # The spine bows out a little between the boards.
+    steps = 6
+    bottom, top = [], []
+    for i in range(steps + 1):
+        a = i / steps
+        x = -t / 2 + t * a
+        z = d / 2 + t * 0.12 * math.sin(math.pi * a)
+        bottom.append(bm.verts.new(V(x, -h / 2, z)))
+        top.append(bm.verts.new(V(x, h / 2, z)))
+    for i in range(steps):
+        face = bm.faces.new((bottom[i], bottom[i + 1], top[i + 1], top[i]))
+        face.material_index = cover
+        for loop, (a, b) in zip(face.loops, [(i, 0), (i + 1, 0), (i + 1, 1), (i, 1)]):
+            loop[uv].uv = (col0 + (col1 - col0) * a / steps, 0.255 + 0.74 * b)
+    return _place(bm, center, rot, None)
 
 
 def polygon(bm, corners, material=0):
@@ -372,17 +451,20 @@ def material(name, color=(0.5, 0.5, 0.5), roughness=0.8, metallic=0.0, textures=
 # UVs
 
 
-def box_uv(obj, layer="UVMap", rotate=0.0, offset=(0.0, 0.0)):
+def box_uv(obj, layer="UVMap", rotate=0.0, offset=(0.0, 0.0), only_unset=False):
     """World-scale box projection: each face takes the plane of its dominant axis.
 
     Texel density comes from the material's `tile` (metres per repeat), so separate
     meshes with the same material share one texture scale. rotate turns the grain.
+    only_unset leaves faces alone that already have UVs (all-zero UVs count as unset).
     """
     me = obj.data
     uv_layer = me.uv_layers.get(layer) or me.uv_layers.new(name=layer)
     mw = obj.matrix_world
     c, s = math.cos(rotate), math.sin(rotate)
     for poly in me.polygons:
+        if only_unset and any(uv_layer.data[li].uv.length_squared > 0 for li in poly.loop_indices):
+            continue
         mat = me.materials[poly.material_index] if me.materials else None
         tile = float(mat.get("tile", 1.0)) if mat else 1.0
         n = (mw.to_3x3() @ poly.normal).normalized()

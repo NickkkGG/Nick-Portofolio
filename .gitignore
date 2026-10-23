@@ -46,6 +46,7 @@ yarn-error.log*
 
 # blender: downloaded sources and rebuildable intermediates (see blender/README.md)
 /blender/assets-src/textures/
+/blender/assets-src/character/
 /blender/build/
 /blender/source/*.blend
 __pycache__/

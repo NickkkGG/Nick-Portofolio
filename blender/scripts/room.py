@@ -18,6 +18,7 @@ from mathutils import Vector  # noqa: E402
 
 import art  # noqa: E402
 import common as C  # noqa: E402
+import crt_model  # noqa: E402
 import textures as T  # noqa: E402
 from common import V  # noqa: E402
 
@@ -99,6 +100,10 @@ def build_materials():
     m["led"] = C.material("PowerLed", (0.1, 0.9, 0.3), 0.3, emission=((0.2, 1.0, 0.35), 4.0), props={"runtime": "led"})
     for i, color in enumerate([(0.32, 0.06, 0.05), (0.06, 0.12, 0.2), (0.12, 0.16, 0.09), (0.45, 0.38, 0.2), (0.08, 0.07, 0.07), (0.38, 0.33, 0.28)]):
         m[f"book{i}"] = C.material(f"Book{i}", color, 0.75, textures={"normal": paper.get("normal"), "orm": paper.get("orm")}, tile=0.3)
+    m["book_cloth"] = C.material(
+        "BookCloth", (0.3, 0.2, 0.15), 0.8, textures={"color": art.book_atlas(art.OUT / "book_atlas.jpg", paper.get("color")), "normal": paper.get("normal"), "orm": paper.get("orm")}
+    )
+    m["book_pages"] = C.material("BookPages", (0.84, 0.8, 0.68), 0.9, textures={"color": art.page_edges(art.OUT / "page_edges.png"), "normal": paper.get("normal")})
     m["poster"] = C.material("Poster", (0.3, 0.3, 0.28), 0.85, textures={"color": art.poster(art.OUT / "poster.jpg", paper.get("color")), "normal": paper.get("normal"), "orm": paper.get("orm")})
     for i in range(3):
         m[f"note{i}"] = C.material(f"Note{i}", (0.9, 0.8, 0.3), 0.9, textures={"color": art.scribbles(art.OUT / f"note{i}.png", seed=40 + i, paper=[(0.93, 0.83, 0.32), (0.9, 0.55, 0.6), (0.6, 0.85, 0.75)][i])})
@@ -130,6 +135,13 @@ def obj(name, build, mats, smooth=None, props=None, uv_rotate=0.0, coll=None):
     o = C.finish(name, bm, mats, coll or C.collection(STATIC), smooth_angle=smooth, props=props)
     C.box_uv(o, rotate=uv_rotate)
     return o
+
+
+def books_object(name, place, m):
+    """Books carry their own atlas UVs, so they skip the box projection obj() applies."""
+    bm = C.new_bmesh()
+    place(bm)
+    return C.finish(name, bm, [m["book_cloth"], m["book_pages"]], C.collection(STATIC), smooth_angle=50)
 
 
 def oriented(bm, corners, normal, material=0):
@@ -336,80 +348,14 @@ def desk(m):
 
 
 def crt(m):
-    c = CRT
-    x, zf = c["x"], c["front"]
-    y_bottom = DESK["top"] + 0.055
-    h, w = c["h"], c["w"]
-    yc = y_bottom + h / 2
-    sw, sh = c["screen"]
-    shell_d = 0.11
-
-    def casing(bm):
-        # Swivel foot and neck.
-        C.box(bm, (0.3, 0.022, 0.28), (x, DESK["top"] + 0.011, zf - 0.23), bevel=0.01, segments=3)
-        C.box(bm, (0.17, 0.035, 0.15), (x, DESK["top"] + 0.035, zf - 0.23), bevel=0.012, segments=3)
-        # Front shell (bezel block).
-        C.box(bm, (w, h, shell_d), (x, yc, zf - shell_d / 2), bevel=0.02, segments=3)
-        # Tube housing: a box whose back end is squeezed in, like a funnel.
-        verts = C.box(bm, (w * 0.94, h * 0.92, c["depth"] - shell_d), (x, yc - 0.005, zf - shell_d - (c["depth"] - shell_d) / 2 + 0.01), bevel=0.03, segments=3)
-        back = zf - c["depth"]
-        for v in verts:
-            p = v.co  # Blender coords: three z = -p.y
-            t = max(0.0, min(1.0, ((-p.y) - (zf - shell_d)) / (back - (zf - shell_d))))
-            k = 1.0 - 0.36 * t
-            p.x = x + (p.x - x) * k
-            p.z = (yc - 0.02 * t) + (p.z - yc) * (1.0 - 0.4 * t)
-        # Vent slots on the top of the housing, following its slope.
-        for i in range(9):
-            z = zf - 0.17 - i * 0.022
-            t = (z - (zf - shell_d)) / (back - (zf - shell_d))
-            y_top = yc - 0.005 - 0.02 * t + 0.46 * h * (1.0 - 0.4 * t)
-            C.box(bm, (0.2 * (1.0 - 0.36 * t), 0.006, 0.008), (x, y_top - 0.002, z), material=1)
-        # Control strip under the screen: power button and four small buttons.
-        C.box(bm, (0.03, 0.016, 0.01), (x + w / 2 - 0.06, y_bottom + 0.028, zf + 0.002), bevel=0.003, material=0)
-        for i in range(4):
-            C.box(bm, (0.014, 0.008, 0.006), (x - 0.08 + i * 0.024, y_bottom + 0.028, zf + 0.001), bevel=0.002, material=1)
-        C.box(bm, (0.07, 0.014, 0.004), (x - w / 2 + 0.07, y_bottom + 0.03, zf + 0.001), material=1)
-
-    obj("CRT_Casing", casing, [m["beige"], m["black"]], smooth=35)
-    obj("CRT_Led", lambda bm: C.sphere(bm, 0.0035, (x + w / 2 - 0.1, y_bottom + 0.028, zf + 0.002), segments=8, rings=4), [m["led"]], props={"runtime": "led", "lightmap": 0})
-
-    def bezel(bm):
-        # Dark recessed frame between the shell and the curved glass.
-        inset = 0.016
-        ow, oh = sw + 0.05, sh + 0.05
-        z = zf + 0.001
-        for (cx, cy, bw, bh) in [
-            (x, yc + 0.01 + (oh + sh) / 4, ow, (oh - sh) / 2),
-            (x, yc + 0.01 - (oh + sh) / 4, ow, (oh - sh) / 2),
-            (x - (ow + sw) / 4, yc + 0.01, (ow - sw) / 2, sh),
-            (x + (ow + sw) / 4, yc + 0.01, (ow - sw) / 2, sh),
-        ]:
-            C.box(bm, (bw, bh, inset), (cx, cy, z - inset / 2), bevel=0.002)
-
-    obj("CRT_Bezel", bezel, [m["black"]], smooth=35)
-
-    # Curved glass: a cap of a 1.2 m sphere, UVs 0..1 for the screen shader.
-    def glass(bm):
-        r = 1.2
-        y_mid = yc + 0.01
-
-        def point(u, v):
-            dx, dy = (u - 0.5) * sw, (v - 0.5) * sh
-            bulge = r - math.sqrt(r * r - dx * dx - dy * dy)
-            return (x + dx, y_mid + dy, zf - 0.006 - bulge + 0.024)
-
-        rows = [[bm.verts.new(V(*point(i / 16, j / 12))) for i in range(17)] for j in range(13)]
-        uv_layer = bm.loops.layers.uv.new("UVMap")
-        for j in range(12):
-            for i in range(16):
-                f = bm.faces.new((rows[j][i], rows[j][i + 1], rows[j + 1][i + 1], rows[j + 1][i]))
-                for loop, (u, v) in zip(f.loops, [(i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1)]):
-                    loop[uv_layer].uv = (u / 16, v / 12)
-        C._mark_all(bm)
-
+    """The desk monitor (shared model, see crt_model.py) standing on its swivel foot."""
+    x, front = CRT["x"], CRT["front"]
+    bottom = DESK["top"] + 0.055
+    obj("CRT_Casing", lambda bm: crt_model.casing(bm, x, bottom, front, foot_top=DESK["top"]), [m["beige"], m["black"]], smooth=35)
+    obj("CRT_Led", lambda bm: crt_model.led(bm, x, bottom, front), [m["led"]], props={"runtime": "led", "lightmap": 0})
+    obj("CRT_Bezel", lambda bm: crt_model.bezel(bm, x, bottom, front), [m["black"]], smooth=35)
     bm = C.new_bmesh()
-    glass(bm)
+    crt_model.glass(bm, x, bottom, front)
     C.finish("CRT_Screen", bm, [m["screen"]], C.collection(STATIC), smooth_angle=80, props={"runtime": "screen", "lightmap": 0})
 
 
@@ -626,14 +572,15 @@ def floor_clutter(m):
     obj("Bin", bin_and_paper, [m["black"], m["paper"]], smooth=40)
 
     def books(bm):
+        # A stack on the floor, lying flat, spines toward the room.
         rng = C.seeded(23)
         y = 0.0
-        for i in range(7):
-            w, h, d = 0.24 + rng.random() * 0.06, 0.025 + rng.random() * 0.03, 0.17 + rng.random() * 0.06
-            C.box(bm, (w, h, d), (-2.55 + rng.random() * 0.03, y + h / 2, Z0 + 0.2), bevel=0.002, rot=(0, (rng.random() - 0.5) * 0.4, 0), material=i % 6)
-            y += h
+        for i, design in enumerate((4, 10, 0, 15, 7, 2, 12)):
+            t, h, d = 0.025 + rng.random() * 0.03, 0.24 + rng.random() * 0.06, 0.17 + rng.random() * 0.05
+            C.book(bm, (t, h, d), (-2.55 + rng.random() * 0.03, y + t / 2, Z0 + 0.2), rot=(0, (rng.random() - 0.5) * 0.4, math.pi / 2), design=design)
+            y += t
 
-    obj("Floor_Books", books, [m[f"book{i}"] for i in range(6)], smooth=40)
+    books_object("Floor_Books", books, m)
 
     def box(bm):
         # A moving box that was never unpacked.
@@ -662,18 +609,23 @@ def shelf_and_cabinet(m):
     obj("Shelf_Brackets", brackets, [m["metal"]], smooth=40)
 
     def books(bm):
+        # A row of spines on the shelf, the last two leaning, and a small stack lying flat.
+        top = sy + 0.014
         x = 1.09
-        for i in range(8):
+        for i, design in enumerate((1, 6, 3, 13, 8, 5, 11, 9, 14)):
             t = 0.022 + rng.random() * 0.03
-            h = 0.17 + rng.random() * 0.08
+            h = 0.18 + rng.random() * 0.07
             d = 0.14 + rng.random() * 0.05
-            lean = 0.0 if i < 6 else 0.28
-            C.box(bm, (t, h, d), (x + t / 2 + (0.03 if lean else 0), sy + 0.014 + h / 2 - (0.012 if lean else 0), sz - 0.01), bevel=0.002, rot=(0, 0, -lean), material=i % 6)
-            x += t + 0.002
-        for j in range(3):
-            C.box(bm, (0.2 - j * 0.02, 0.03, 0.15), (1.95, sy + 0.029 + j * 0.03, sz), bevel=0.002, rot=(0, 0.1 * j - 0.1, 0), material=(j + 2) % 6)
+            lean = 0.0 if i < 7 else 0.3
+            C.book(bm, (t, h, d), (x + t / 2 + (0.035 if lean else 0), top + h / 2 - (0.012 if lean else 0), sz - 0.01 + (0.17 - d) / 2), rot=(0, 0, -lean), design=design)
+            x += t + 0.0015
+        y = top
+        for j, design in enumerate((0, 12, 2)):
+            t = 0.026 + 0.008 * j
+            C.book(bm, (t, 0.21 - j * 0.02, 0.15), (1.95, y + t / 2, sz), rot=(0, 0.1 * j - 0.1, math.pi / 2), design=design)
+            y += t
 
-    obj("Books", books, [m[f"book{i}"] for i in range(6)], smooth=40)
+    books_object("Books", books, m)
 
     def box(bm):
         C.box(bm, (0.22, 0.15, 0.17), (1.62, sy + 0.014 + 0.075, sz), bevel=0.004)
