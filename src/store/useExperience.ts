@@ -132,7 +132,7 @@ export const useExperience = create<ExperienceState>()(
     knockAt: (position) => {
       const { p, time, sounds } = get();
       if (!canKnock(p)) return false;
-      const result = knock(get().knock, time);
+      const result = knock(get().knock, time, position);
       if (!result.accepted) return false;
       set({
         knock: result.state,

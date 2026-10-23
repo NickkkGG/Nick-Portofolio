@@ -84,6 +84,7 @@ describe('experience store', () => {
     expect(store().knock.knocks).toEqual([3]);
     expect(store().knock.tension).toBe(1);
     expect(store().sounds).toEqual([{ name: 'knock', time: 3, position: [0.5, 2.2, -1.18] }]);
+    expect(store().knock.heard).toEqual([{ at: 3, point: [0.5, 2.2, -1.18] }]);
   });
 
   it('knocks outside the room do nothing', () => {

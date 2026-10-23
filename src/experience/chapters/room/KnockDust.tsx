@@ -9,6 +9,8 @@ export interface DustBurst {
   time: number;
   point: Vec3;
   normal: Vec3;
+  /** Share of a full puff (0..1): a softer knuckle shakes less off the wall. */
+  amount: number;
 }
 
 /** Bursts on screen at once, two per click; an older one is gone long before a sixth click lands. */
@@ -73,12 +75,13 @@ export function KnockDust({ bursts }: { bursts: RefObject<DustBurst[]> }) {
       const alpha = layer.geometry.getAttribute('aAlpha') as BufferAttribute;
       let n = 0;
       for (const burst of live) {
-        for (let i = 0; i < DUST_COUNT; i++) {
+        const specks = Math.round(DUST_COUNT * burst.amount);
+        for (let i = 0; i < specks; i++) {
           const p = dustParticle(i, time - burst.time, burst.point, burst.normal);
           if (p.flake !== flakeLayer) continue;
           pos.setXYZ(n, p.position[0], p.position[1], p.position[2]);
           sizeAttr.setX(n, p.size);
-          alpha.setX(n, p.alpha * (flakeLayer ? 0.9 : 0.7));
+          alpha.setX(n, p.alpha * (flakeLayer ? 0.8 : 0.45));
           n++;
         }
       }

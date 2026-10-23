@@ -76,6 +76,27 @@ function hit(ctx: AudioContext, out: AudioNode, at: number, strength: number) {
   click.start(at);
 }
 
+let warmed = false;
+
+/**
+ * Gets the knock ready at PLAY: the room's echo, and the browser's HRTF data, which it only
+ * starts loading when the first spatial sound is made. Without this the first knock plays
+ * while the data is still loading, and its first knuckle comes out at a third of its loudness.
+ */
+export function prepareKnock(): void {
+  try {
+    const ctx = audio();
+    if (!ctx || warmed) return;
+    const warm = new PannerNode(ctx, { panningModel: 'HRTF' });
+    const mute = ctx.createGain();
+    mute.gain.value = 0;
+    warm.connect(mute).connect(ctx.destination);
+    warmed = true;
+  } catch {
+    // No sound is better than a broken room.
+  }
+}
+
 /** Knock-knock at `position`, heard from the camera. */
 export function playKnock(position: Vec3, listener: CameraPose): void {
   try {

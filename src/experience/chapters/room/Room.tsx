@@ -18,11 +18,12 @@ import {
   Vector3,
 } from 'three';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
-import { playKnock } from '@/audio/knock';
+import { playKnock, prepareKnock } from '@/audio/knock';
 import { MODELS, ROOM_LIGHTMAPS, useKtx2, useModel } from '@/experience/assets';
 import { LightShaft } from '@/experience/atmosphere/LightShaft';
 import type { Vec3 } from '@/experience/camera/types';
 import { Character } from '@/experience/character/Character';
+import { glanceAt } from '@/experience/character/glance';
 import { roomMix } from '@/experience/character/poses';
 import { lampLevel } from '@/experience/flicker';
 import { useExperience } from '@/store/useExperience';
@@ -219,6 +220,18 @@ export function Room() {
   }, [layout]);
 
   useEffect(() => () => setKnockCursor(false), []);
+  // Set up at PLAY, so even the first knock is heard in full.
+  useEffect(
+    () =>
+      useExperience.subscribe(
+        (s) => s.started,
+        (started) => {
+          if (started) prepareKnock();
+        },
+        { fireImmediately: true },
+      ),
+    [],
+  );
 
   useChapterFrame('room', ref, () => {
     const { time } = useExperience.getState();
@@ -240,8 +253,8 @@ export function Room() {
     event.stopPropagation();
     const target = knockTarget(toHits(event));
     if (!target || !store.knockAt(target.point)) return;
-    // Knock-knock: each knuckle shakes its own puff off the wall.
-    const puffs = KNUCKLES.map(({ delay }, k) => ({ time: store.time + delay, point: knucklePoint(target.point, target.normal, k), normal: target.normal }));
+    // Knock-knock: each knuckle shakes its own puff off the wall, the second a smaller one.
+    const puffs = KNUCKLES.map(({ delay, dust }, k) => ({ time: store.time + delay, point: knucklePoint(target.point, target.normal, k), normal: target.normal, amount: dust }));
     bursts.current = [...bursts.current, ...puffs].slice(-MAX_BURSTS);
     if (store.cameraPose) playKnock(target.point, store.cameraPose);
   };
@@ -282,8 +295,16 @@ export function Room() {
       />
       <LightShaft group="room" from={[screen[0], screen[1], screen[2] + 0.02]} toward={[screen[0], screen[1] - 0.06, 0.6]} length={1.3} radiusStart={0.2} radiusEnd={0.62} color="#cfe8ff" intensity={0.06} />
 
-      {/* At the desk, typing: on the chair (room.py), facing the monitor. */}
-      <Character position={[0, 0, 0.03]} rotation={[0, Math.PI, 0]} pose={() => roomMix(useExperience.getState().time)} />
+      {/* At the desk, typing: on the chair (room.py), facing the monitor. A knock turns the head for a while. */}
+      <Character
+        position={[0, 0, 0.03]}
+        rotation={[0, Math.PI, 0]}
+        pose={() => roomMix(useExperience.getState().time)}
+        look={() => {
+          const { knock, time } = useExperience.getState();
+          return glanceAt(knock.heard, time);
+        }}
+      />
     </group>
   );
 }

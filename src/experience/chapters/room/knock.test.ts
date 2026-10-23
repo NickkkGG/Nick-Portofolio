@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import type { Vec3 } from '@/experience/camera/types';
+import { DUST_COUNT } from './dust';
 import { canKnock, INITIAL_KNOCK, knock, knockTarget, type KnockState, KNUCKLES, knucklePoint, lampNervousness, roomT, tensionAt } from './knock';
+
+const WALL: Vec3 = [0.5, 2.2, -1.18];
 
 function knockAt(...times: number[]): { state: KnockState; whosThere: boolean } {
   let state = INITIAL_KNOCK;
   let whosThere = false;
-  for (const t of times) ({ state, whosThere } = knock(state, t));
+  for (const t of times) ({ state, whosThere } = knock(state, t, WALL));
   return { state, whosThere };
 }
 
@@ -36,15 +40,28 @@ describe('ghost knock tension', () => {
   });
 
   it('ignores knocks that come too fast, so the lamp never strobes', () => {
-    const first = knock(INITIAL_KNOCK, 0);
-    const tooSoon = knock(first.state, 0.5);
+    const first = knock(INITIAL_KNOCK, 0, WALL);
+    const tooSoon = knock(first.state, 0.5, WALL);
     expect(tooSoon.accepted).toBe(false);
     expect(tensionAt(tooSoon.state, 0.5)).toBe(1);
-    expect(knock(tooSoon.state, 0.95).accepted).toBe(true);
+    expect(tooSoon.state.heard).toHaveLength(1);
+    expect(knock(tooSoon.state, 0.95, WALL).accepted).toBe(true);
   });
 
   it('remembers recent knock times for the lamp', () => {
     expect(knockAt(1, 2, 3).state.knocks).toEqual([1, 2, 3]);
+  });
+
+  it('remembers where the last two knocks came from, for the character to look at', () => {
+    const side: Vec3 = [-2.9, 1.5, 0.3];
+    const low: Vec3 = [1, 1, -1.18];
+    let { state } = knock(INITIAL_KNOCK, 1, WALL);
+    ({ state } = knock(state, 2, side));
+    ({ state } = knock(state, 3, low));
+    expect(state.heard).toEqual([
+      { at: 2, point: side },
+      { at: 3, point: low },
+    ]);
   });
 });
 
@@ -95,6 +112,17 @@ describe('knock-knock', () => {
     expect(KNUCKLES[1].delay).toBeGreaterThan(0.2);
     expect(KNUCKLES[1].delay).toBeLessThan(0.4);
     expect(KNUCKLES[1].strength).toBeLessThan(KNUCKLES[0].strength);
+  });
+
+  it('the two knuckles come close enough to sound like one knock-knock', () => {
+    expect(KNUCKLES[1].delay).toBeLessThanOrEqual(0.26);
+  });
+
+  it('each knuckle shakes off a little dust, the second less than the first', () => {
+    expect(KNUCKLES[1].dust).toBeLessThan(KNUCKLES[0].dust);
+    // A puff, not a cloud: a click used to throw 280 specks.
+    const specks = KNUCKLES.reduce((sum, k) => sum + Math.round(DUST_COUNT * k.dust), 0);
+    expect(specks).toBeLessThanOrEqual(100);
   });
 
   it('the second knuckle lands beside the first, on the same wall', () => {

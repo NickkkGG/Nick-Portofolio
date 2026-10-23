@@ -1,4 +1,5 @@
 import type { Vec3 } from '@/experience/camera/types';
+import type { Heard } from '@/experience/character/glance';
 import { smoothstep } from '@/lib/math';
 import { displayState } from '@/timeline/loop';
 import { resolve } from '@/timeline/resolve';
@@ -11,9 +12,11 @@ export interface KnockState {
   knocks: number[];
   /** When the monitor last typed "who's there?". */
   whosThereAt: number | null;
+  /** The last two knocks and where they came from, for the character to look at. */
+  heard: Heard[];
 }
 
-export const INITIAL_KNOCK: KnockState = { tension: 0, lastKnock: null, knocks: [], whosThereAt: null };
+export const INITIAL_KNOCK: KnockState = { tension: 0, lastKnock: null, knocks: [], whosThereAt: null, heard: [] };
 
 export const TENSION_MAX = 5;
 const DECAY_SECONDS = 10;
@@ -23,10 +26,13 @@ const REMEMBERED = 8;
 /** Thin things on a wall (posters, stains, webs) still knock the wall behind them. */
 const ON_WALL = 0.06;
 
-/** One click knocks twice, knock-knock: when each knuckle lands after the click (s), and how hard. */
+/**
+ * One click knocks twice, knock-knock: when each knuckle lands after the click (s), how hard,
+ * and its share of a full puff of dust.
+ */
 export const KNUCKLES = [
-  { delay: 0, strength: 1 },
-  { delay: 0.3, strength: 0.85 },
+  { delay: 0, strength: 1, dust: 1 },
+  { delay: 0.25, strength: 0.85, dust: 0.5 },
 ] as const;
 /** The second knuckle lands this far along the wall from the first (m). */
 const KNUCKLE_STEP = 0.03;
@@ -53,8 +59,8 @@ export function tensionAt(state: KnockState, now: number): number {
   return Math.max(0, state.tension - Math.floor((now - state.lastKnock) / DECAY_SECONDS));
 }
 
-/** A knock at `now`. The fifth in a row makes the monitor answer, and the tension lets go. */
-export function knock(state: KnockState, now: number): { state: KnockState; accepted: boolean; whosThere: boolean } {
+/** A knock at `now` on `point`. The fifth in a row makes the monitor answer, and the tension lets go. */
+export function knock(state: KnockState, now: number, point: Vec3): { state: KnockState; accepted: boolean; whosThere: boolean } {
   if (state.lastKnock !== null && now - state.lastKnock < COOLDOWN) return { state, accepted: false, whosThere: false };
   const tension = tensionAt(state, now) + 1;
   const whosThere = tension >= TENSION_MAX;
@@ -64,6 +70,7 @@ export function knock(state: KnockState, now: number): { state: KnockState; acce
       lastKnock: now,
       knocks: [...state.knocks, now].slice(-REMEMBERED),
       whosThereAt: whosThere ? now : state.whosThereAt,
+      heard: [...state.heard, { at: now, point }].slice(-2),
     },
     accepted: true,
     whosThere,

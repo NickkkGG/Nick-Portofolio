@@ -1,10 +1,10 @@
 import type { Vec3 } from '@/experience/camera/types';
 import { mulberry32 } from '@/lib/random';
 
-/** Specks shaken loose by one knock: fine plaster dust and a few flakes of old paint. */
-export const DUST_COUNT = 140;
+/** Specks shaken loose by one knuckle: a little fine plaster dust and a few flakes of old paint. */
+export const DUST_COUNT = 60;
 /** Seconds until the last speck has faded. */
-export const DUST_LIFETIME = 4.5;
+export const DUST_LIFETIME = 3.4;
 const FLOOR = 0.003;
 
 interface Speck {
@@ -22,10 +22,10 @@ interface Speck {
 
 const specks: Speck[] = Array.from({ length: DUST_COUNT }, (_, i) => {
   const rand = mulberry32(i * 7919 + 13);
-  const flake = rand() < 0.18;
+  const flake = rand() < 0.14;
   return flake
-    ? { flake, size: 0.018 + 0.02 * rand(), out: 0.2 + 0.3 * rand(), side: (rand() - 0.5) * 0.3, lift: 0.2 * rand(), drag: 1.6, fall: 0.6 + 0.4 * rand(), life: 3.5 + rand() }
-    : { flake, size: 0.005 + 0.006 * rand(), out: 0.15 + 0.45 * rand(), side: (rand() - 0.5) * 0.5, lift: -0.1 + 0.4 * rand(), drag: 3.5, fall: 0.15 + 0.2 * rand(), life: 2.5 + 2 * rand() };
+    ? { flake, size: 0.015 + 0.012 * rand(), out: 0.2 + 0.3 * rand(), side: (rand() - 0.5) * 0.3, lift: 0.2 * rand(), drag: 1.6, fall: 0.6 + 0.4 * rand(), life: 2.6 + 0.8 * rand() }
+    : { flake, size: 0.004 + 0.005 * rand(), out: 0.15 + 0.45 * rand(), side: (rand() - 0.5) * 0.5, lift: -0.1 + 0.4 * rand(), drag: 3.5, fall: 0.15 + 0.2 * rand(), life: 1.8 + 1.4 * rand() };
 });
 
 const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];

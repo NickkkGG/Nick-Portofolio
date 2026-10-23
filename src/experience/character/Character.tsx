@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import { type AnimationAction, AnimationMixer, type Group, LoopOnce, type Mesh, type Object3D } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { MODELS, useModel } from '@/experience/assets';
+import type { Vec3 } from '@/experience/camera/types';
+import { Gaze } from './gaze';
 import { blendedOffset, type Clip, type ClipMix } from './poses';
 
 /** Inside a chapter group that is showing (useChapterFrame hides whole chapters). */
@@ -16,6 +18,8 @@ type Props = Omit<ThreeElements['group'], 'ref'> & {
   pose: () => ClipMix[];
   /** Runs first each frame, to move the whole figure (down the fall) or hide it. */
   place?: (figure: Group) => void;
+  /** Where to look this frame, and how much (0..1), over the clips: a glance at a knock. */
+  look?: () => { point: Vec3; weight: number } | null;
 };
 
 /**
@@ -23,7 +27,7 @@ type Props = Omit<ThreeElements['group'], 'ref'> & {
  * Clip times come from the scene clock rather than the mixer's own, so a frozen clock
  * freezes the figure and the loop seam shows the same pose on both sides.
  */
-export function Character({ pose, place, ...props }: Props) {
+export function Character({ pose, place, look, ...props }: Props) {
   const outer = useRef<Group>(null);
   const inner = useRef<Group>(null);
   const { scene, animations } = useModel(MODELS.character);
@@ -48,6 +52,12 @@ export function Character({ pose, place, ...props }: Props) {
     }
     return { mixer, actions };
   }, [figure, animations]);
+  // Made while the figure still stands in its rest pose.
+  const gaze = useMemo(() => {
+    const neck = figure.getObjectByName('neck_01');
+    const head = figure.getObjectByName('head');
+    return neck && head ? new Gaze(neck, head, figure) : null;
+  }, [figure]);
   // Started on mount, not when the mixer is made: Strict Mode mounts twice, stopping in between.
   useEffect(() => {
     for (const action of rig.actions.values()) {
@@ -76,6 +86,8 @@ export function Character({ pose, place, ...props }: Props) {
     }
     rig.mixer.update(0);
     body.position.set(...blendedOffset(mix));
+    const glance = look?.();
+    if (glance && gaze) gaze.apply(glance.point, glance.weight, root);
   });
 
   return (
