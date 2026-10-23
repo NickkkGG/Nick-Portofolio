@@ -1,6 +1,6 @@
 import { useFrame } from '@react-three/fiber';
-import { useEffect, useMemo, useRef } from 'react';
-import { CanvasTexture, type Group, type Mesh, type PointLight, ShaderMaterial, SRGBColorSpace, type Texture, UniformsLib, UniformsUtils } from 'three';
+import { type Ref, useEffect, useMemo, useRef } from 'react';
+import { CanvasTexture, type Group, type Mesh, type Object3D, ShaderMaterial, SRGBColorSpace, type Texture, UniformsLib, UniformsUtils } from 'three';
 import type { Vec3 } from '@/experience/camera/types';
 import { useExperience } from '@/store/useExperience';
 import { localProgress } from '@/timeline/resolve';
@@ -168,14 +168,13 @@ export interface HangingCrtProps {
   channel: string;
   /** Screen brightness from the spiral chapter's local t: 0 dim, 1 focused. */
   focusAt: (t: number) => number;
-  /** Main monitors throw their glow onto the cables around them. */
-  castLight?: boolean;
+  /** Main monitors mark the spot in front of the screen where their glow on the cables comes from. */
+  glowRef?: Ref<Object3D>;
 }
 
 /** An old CRT hanging from its cable, showing NO SIGNAL static until a project tunes in. */
-export function HangingCrt({ template, env, envScale, smudge, position, angle, seed, title, channel, focusAt, castLight = false }: HangingCrtProps) {
+export function HangingCrt({ template, env, envScale, smudge, position, angle, seed, title, channel, focusAt, glowRef }: HangingCrtProps) {
   const pivot = useRef<Group>(null);
-  const light = useRef<PointLight>(null);
   const rig = useMemo(() => new CrtRig(template, seed, env, envScale, smudge), [template, seed, env, envScale, smudge]);
 
   useEffect(() => {
@@ -190,14 +189,13 @@ export function HangingCrt({ template, env, envScale, smudge, position, angle, s
     rig.update(time, focus, surgeLevel(time));
     const [x, z] = hangingSway(time, seed, CABLE);
     pivot.current?.rotation.set(x, angle, z);
-    if (light.current) light.current.intensity = 5 * focus;
   });
 
   // The pivot is the top of the cable, so the whole monitor swings from there.
   return (
     <group ref={pivot} position={[position[0], position[1] + CABLE, position[2]]} rotation={[0, angle, 0]}>
       <primitive object={rig.root} />
-      {castLight && <pointLight ref={light} position={[0, -CABLE, 1.9]} color="#bfe6ff" intensity={0} distance={9} decay={1} />}
+      {glowRef && <object3D ref={glowRef} position={[0, -CABLE, 1.9]} />}
     </group>
   );
 }

@@ -1,23 +1,17 @@
 'use client';
 
 import { Canvas } from '@react-three/fiber';
-import { Suspense, useEffect } from 'react';
+import { Suspense } from 'react';
 import { DebugStats } from '@/debug/DebugStats';
 import { AtmosphereDriver } from './atmosphere/AtmosphereDriver';
 import { Backdrop } from './atmosphere/Backdrop';
 import { Particles } from './atmosphere/Particles';
-import { useExperience } from '@/store/useExperience';
 import { CameraRig } from './camera/CameraRig';
 import { Chapters } from './chapters/Chapters';
 import { EffectsStack } from './effects/EffectsStack';
 import { FrameClock } from './FrameClock';
-
-/** Mounted inside the Suspense boundary: the scene is ready once every model has loaded. */
-function SceneReady() {
-  const setSceneReady = useExperience((s) => s.setSceneReady);
-  useEffect(() => setSceneReady(), [setSceneReady]);
-  return null;
-}
+import { StableLights } from './StableLights';
+import { Warmup } from './Warmup';
 
 export default function Experience() {
   return (
@@ -34,9 +28,11 @@ export default function Experience() {
       <CameraRig />
       <AtmosphereDriver />
       <Backdrop />
+      {/* Inside the boundary, both mount once every model has loaded, after every chapter's light. */}
       <Suspense fallback={null}>
         <Chapters />
-        <SceneReady />
+        <StableLights />
+        <Warmup />
       </Suspense>
       <Particles />
       <EffectsStack />

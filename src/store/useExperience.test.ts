@@ -21,6 +21,16 @@ describe('experience store', () => {
     expect(store().vhsSpike).toBe(1);
   });
 
+  it('the warm-up only ever moves forward, and the scene being ready completes it', () => {
+    expect(store().warmup).toBe(0);
+    store().setWarmup(0.4);
+    store().setWarmup(0.2);
+    expect(store().warmup).toBe(0.4);
+    store().setSceneReady();
+    expect(store().sceneReady).toBe(true);
+    expect(store().warmup).toBe(1);
+  });
+
   it('a forward wrap increments loopIndex and spikes the VHS', () => {
     store().setScroll(0.98);
     store().setScroll(0.02);

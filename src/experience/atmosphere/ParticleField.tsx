@@ -61,7 +61,7 @@ void main() {
   // biggest right in front of the lens.
   float coc = uAperture * uViewportHeight * abs(1.0 / dist - 1.0 / uFocus);
   float size = max(sharp + coc, 1e-3);
-  gl_PointSize = min(256.0, size);
+  gl_PointSize = min(64.0, size);
   vDisc = clamp(coc / size, 0.0, 1.0);
   float blink = 1.0 - uTwinkle * (0.5 + 0.5 * sin(uTime * (0.8 + aSeed * 2.5) + aSeed * 40.0));
   // Fade out far away (fog) and right in front of the lens; a wide disc spreads its light thinner.

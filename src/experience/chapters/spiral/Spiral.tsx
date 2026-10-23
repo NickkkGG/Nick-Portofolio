@@ -7,6 +7,8 @@ import {
   type Material,
   type Mesh,
   MeshStandardMaterial,
+  type Object3D,
+  type PointLight,
   type ShaderMaterial,
   SRGBColorSpace,
   type Texture,
@@ -21,7 +23,7 @@ import { isVisible } from '@/timeline/visibility';
 import { createStaticScreens } from '@/experience/materials/staticScreens';
 import { useChapterFrame } from '../useChapterFrame';
 import { HangingCrt } from './HangingCrt';
-import { helixSlots, monitorFocus, SPIRAL } from './helix';
+import { focusedIndex, helixSlots, monitorFocus, SPIRAL } from './helix';
 import { surgeLevel } from './motion';
 
 const WORLD = '/models/spiral.glb';
@@ -134,6 +136,8 @@ class SpiralKit {
 export function Spiral() {
   const ref = useRef<Group>(null);
   const character = useRef<Mesh>(null);
+  const glow = useRef<PointLight>(null);
+  const glowSpots = useRef<(Object3D | null)[]>([]);
   const world = useGLTF(WORLD, DRACO);
   const crt = useGLTF(CRT, DRACO);
   const maps = useTexture(MAPS);
@@ -148,6 +152,15 @@ export function Spiral() {
   useChapterFrame('spiral', ref, (t) => {
     if (character.current) {
       character.current.position.y = STANDING_Y + 9.5 * (1 - smoothstep(0, 0.1, t));
+    }
+    // One light for all the project monitors, in front of the one the camera is at: they hang
+    // 14 m and a quarter turn apart, so only that one's glow on the cables is ever in frame.
+    // It dies away halfway to the next monitor, where it jumps over.
+    const index = focusedIndex(t, SLOTS.length);
+    const spot = glowSpots.current[index];
+    if (glow.current && spot) {
+      spot.getWorldPosition(glow.current.position);
+      glow.current.intensity = 5 * smoothstep(0.5, 1, monitorFocus(t, index, SLOTS.length));
     }
   });
 
@@ -211,9 +224,12 @@ export function Spiral() {
             title={PROJECTS[i].status === 'live' ? PROJECTS[i].title : 'NO SIGNAL'}
             channel={channelLabel(i)}
             focusAt={(t) => Math.max(0.15, monitorFocus(t, i, SLOTS.length))}
-            castLight
+            glowRef={(spot) => {
+              glowSpots.current[i] = spot;
+            }}
           />
         ))}
+        <pointLight ref={glow} color="#bfe6ff" intensity={0} distance={9} decay={1} />
         {BACKGROUND.map((monitor) => (
           <HangingCrt
             key={monitor.seed}

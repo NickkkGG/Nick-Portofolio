@@ -12,6 +12,8 @@ export const VHS_BASE_DEFAULT = 0.22;
 export interface ExperienceState {
   started: boolean;
   sceneReady: boolean;
+  /** 0..1: how far the scene has warmed up behind the loader; 1 once it is ready. */
+  warmup: number;
   /** Global progress through one loop, 0..1. */
   p: number;
   loopIndex: number;
@@ -27,6 +29,7 @@ export interface ExperienceState {
   sounds: SoundEvent[];
   lastActivity: number;
   setSceneReady(): void;
+  setWarmup(amount: number): void;
   play(): void;
   setScroll(p: number, opts?: { programmatic?: boolean }): void;
   tick(delta: number): void;
@@ -48,6 +51,7 @@ export const initialExperienceState: Pick<
   ExperienceState,
   | 'started'
   | 'sceneReady'
+  | 'warmup'
   | 'p'
   | 'loopIndex'
   | 'frame'
@@ -63,6 +67,7 @@ export const initialExperienceState: Pick<
 > = {
   started: false,
   sceneReady: false,
+  warmup: 0,
   p: 0,
   loopIndex: 1,
   frame: 0,
@@ -80,7 +85,8 @@ export const initialExperienceState: Pick<
 export const useExperience = create<ExperienceState>()(
   subscribeWithSelector((set, get) => ({
     ...initialExperienceState,
-    setSceneReady: () => set({ sceneReady: true }),
+    setSceneReady: () => set({ sceneReady: true, warmup: 1 }),
+    setWarmup: (amount) => set({ warmup: Math.max(get().warmup, amount) }),
     play: () => {
       if (get().started) return;
       set({ started: true, vhsSpike: 1, lastActivity: get().time });

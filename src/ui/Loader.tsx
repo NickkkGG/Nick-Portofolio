@@ -1,79 +1,101 @@
 'use client';
 
 import { useProgress } from '@react-three/drei';
+import { useEffect, useState } from 'react';
 import { useExperience } from '@/store/useExperience';
-import { formatLoading, loaderState } from './loaderState';
+import { filamentHeat, formatLoading, loaderState } from './loaderState';
 import { useCoarsePointer } from './useCoarsePointer';
 
 const WARNING = 'WARNING — This tape contains flashing lights and loud sounds. Headphones recommended.';
+/** How long the set takes to switch on after PLAY; the .loader animations in globals.css fit inside it. */
+const SWITCH_ON_MS = 900;
 
-/** Bulb whose filament warms up with the loading progress. */
-function Filament({ glow }: { glow: number }) {
+/** The shown percent counts up toward `target` like a tape counter: never jumping, never going back. */
+function useCounter(target: number): number {
+  const [shown, setShown] = useState(target);
+  useEffect(() => {
+    if (shown >= target) return;
+    const frame = requestAnimationFrame(() => setShown((s) => Math.min(target, s + Math.max(1, Math.ceil((target - s) * 0.12)))));
+    return () => cancelAnimationFrame(frame);
+  }, [shown, target]);
+  return shown;
+}
+
+/** A bare filament across the dark, glowing out from its middle and warming from dull red to white as the tape loads. */
+function Filament({ level }: { level: number }) {
+  const heat = filamentHeat(level);
   return (
-    <svg width="72" height="108" viewBox="0 0 72 108" aria-hidden className="mb-8">
-      <path
-        d="M36 6c-17 0-30 13-30 30 0 12 7 20 13 27 4 5 6 10 6 15v6h22v-6c0-5 2-10 6-15 6-7 13-15 13-27C66 19 53 6 36 6z"
-        fill="none"
-        stroke="#e8e6d9"
-        strokeOpacity={0.25}
-        strokeWidth={1.5}
-      />
-      <path d="M27 92h18M28 98h16M31 104h10" stroke="#e8e6d9" strokeOpacity={0.25} strokeWidth={1.5} />
-      <path
-        d="M28 84V58l4-10 4 10 4-10 4 10v26"
-        fill="none"
-        stroke="#ffb35c"
-        strokeWidth={2}
-        strokeLinejoin="round"
+    <div aria-hidden className="relative h-px w-56">
+      <div className="absolute inset-0 bg-osd/10" />
+      <div
+        className="filament absolute inset-x-0 -top-px h-[3px] rounded-full"
         style={{
-          opacity: 0.15 + 0.85 * glow,
-          filter: `drop-shadow(0 0 ${2 + 12 * glow}px #ffb35c)`,
+          transform: `scaleX(${Math.max(0.02, level)})`,
+          backgroundColor: heat,
+          boxShadow: `0 0 ${4 + 14 * level}px ${1 + 2 * level}px ${heat}`,
         }}
       />
-    </svg>
+    </div>
   );
 }
 
+/**
+ * The switched-off set before the tape plays: a filament warming up with the loading, the
+ * counter, the warning. PLAY switches the set on: the filament flares into the tube's beam
+ * and the dark parts from its line, opening the picture from the middle.
+ */
 export function Loader() {
   const started = useExperience((s) => s.started);
   const sceneReady = useExperience((s) => s.sceneReady);
+  const warmup = useExperience((s) => s.warmup);
   const play = useExperience((s) => s.play);
   const { active, loaded, total, errors } = useProgress();
   const coarse = useCoarsePointer();
-  if (started) return null;
+  const { status, percent } = loaderState({ sceneReady, active, loaded, total, errors, warmup });
+  const shown = useCounter(percent);
+  const [switching, setSwitching] = useState(false);
 
-  const { status, percent } = loaderState({ sceneReady, active, loaded, total, errors });
+  useEffect(() => {
+    if (!switching) return;
+    const timer = setTimeout(() => setSwitching(false), SWITCH_ON_MS);
+    return () => clearTimeout(timer);
+  }, [switching]);
+
+  if (started && !switching) return null;
+
+  const onPlay = () => {
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) setSwitching(true);
+    play();
+  };
 
   return (
-    <div
-      data-testid="loader"
-      className="pointer-events-auto fixed inset-0 z-20 flex flex-col items-center justify-center bg-ink px-6 text-center font-osd text-osd"
-    >
-      <p className="mb-12 max-w-xl border border-osd/40 px-6 py-4 text-xl leading-snug tracking-wide">{WARNING}</p>
-      <Filament glow={percent / 100} />
-      {status === 'error' ? (
-        <>
-          <p className="mb-4 text-2xl text-alarm">TAPE ERROR</p>
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            className="border border-osd px-6 py-2 text-2xl hover:bg-osd hover:text-ink"
-          >
-            RETRY
-          </button>
-        </>
-      ) : status === 'ready' ? (
-        <button
-          type="button"
-          onClick={play}
-          className="border border-osd px-8 py-2 text-3xl tracking-widest hover:bg-osd hover:text-ink"
-        >
-          ▶ PLAY
-        </button>
-      ) : (
-        <p className="text-2xl tracking-widest">{formatLoading(percent)}</p>
-      )}
-      {coarse && <p className="mt-10 text-lg text-osd/70">Best experienced on a desktop with headphones.</p>}
+    <div data-testid="loader" data-switching={switching || undefined} className="loader pointer-events-auto fixed inset-0 z-20 font-osd text-osd">
+      <div className="tube tube-top" />
+      <div className="tube tube-bottom" />
+      <div className="loader-face absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+        <div className="flex flex-col items-center gap-7">
+          {status === 'error' ? (
+            <div className="flex items-center gap-6 text-xl tracking-[0.3em]">
+              <span className="text-alarm">TAPE ERROR</span>
+              <button type="button" onClick={() => window.location.reload()} className="tracking-[0.3em] underline-offset-8 hover:underline">
+                RETRY
+              </button>
+            </div>
+          ) : status === 'ready' && shown >= 100 ? (
+            <button type="button" onClick={onPlay} className="play-button text-2xl tracking-[0.35em]">
+              ▶ PLAY
+            </button>
+          ) : (
+            <p className="text-xl tracking-[0.3em] text-osd/70">{formatLoading(shown)}</p>
+          )}
+          <Filament level={shown / 100} />
+        </div>
+        <div className="absolute inset-x-6 bottom-10 flex flex-col items-center gap-2">
+          <p className="max-w-md text-lg leading-snug tracking-wide text-osd/55">{WARNING}</p>
+          {coarse && <p className="text-base tracking-wide text-osd/45">Best experienced on a desktop with headphones.</p>}
+        </div>
+      </div>
+      <div aria-hidden className="beam" />
     </div>
   );
 }

@@ -38,8 +38,31 @@ describe('glassAt', () => {
       expect(at, id).toBeGreaterThan(0.4);
       expect(glassAt(b - 0.005).amount, id).toBeLessThan(at);
       expect(glassAt(b - 0.005).amount, id).toBeGreaterThan(0);
+      expect(glassAt(b + 0.005).amount, id).toBeLessThan(at);
+      expect(glassAt(b + 0.005).amount, id).toBeGreaterThan(0);
+    }
+  });
+
+  it('is the same either side of the change, except where the floor gives way', () => {
+    for (const id of ['spiral', 'problem', 'stack', 'contact', 'loop'] as const) {
+      const b = getChapter(id).start;
       expect(Math.abs(glassAt(b - 0.004).amount - glassAt(b + 0.004).amount), id).toBeLessThan(1e-9);
     }
+  });
+
+  it('creeps in slowly over the end of the room, and clears quickly once the camera drops', () => {
+    const b = getChapter('fall').start;
+    // Over the last of the room the glass rises a little every step of the scroll, never in a jump.
+    let previous = 0;
+    for (let p = b - 0.03 + 0.001; p <= b; p += 0.001) {
+      const amount = glassAt(p).amount;
+      expect(amount, `p=${p}`).toBeGreaterThan(previous);
+      expect(amount - previous, `p=${p}`).toBeLessThan(0.06);
+      previous = amount;
+    }
+    expect(glassAt(b - 0.02).amount).toBeGreaterThan(0.05);
+    expect(glassAt(b + 0.015).amount).toBe(0);
+    expect(glassAt(b - 0.01).amount).toBeGreaterThan(glassAt(b + 0.01).amount);
   });
 
   it('the big descents go through the thickest glass', () => {

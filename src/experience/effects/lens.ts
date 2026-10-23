@@ -5,5 +5,5 @@ export const LENS = {
   /** Size of the post-process bokeh. */
   bokehScale: 3,
   /** How wide out-of-focus particles open up, as a fraction of the viewport height per dioptre. */
-  aperture: 0.012,
+  aperture: 0.005,
 } as const;
