@@ -43,3 +43,9 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# blender: downloaded sources and rebuildable intermediates (see blender/README.md)
+/blender/assets-src/textures/
+/blender/build/
+/blender/source/*.blend
+__pycache__/

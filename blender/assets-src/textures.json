@@ -1,0 +1,61 @@
+{
+  "license": "CC0 1.0 (public domain). Poly Haven: https://polyhaven.com/license, ambientCG: https://docs.ambientcg.com/license/",
+  "polyhaven": [
+    {
+      "id": "worn_plaster_wall",
+      "use": "walls and ceiling",
+      "files": {
+        "worn_plaster_wall_diff_2k.jpg": 3096042,
+        "worn_plaster_wall_nor_gl_2k.jpg": 2935964,
+        "worn_plaster_wall_arm_2k.jpg": 1644844
+      }
+    },
+    {
+      "id": "concrete_floor_worn_001",
+      "use": "concrete floor",
+      "files": {
+        "concrete_floor_worn_001_diff_2k.jpg": 482906,
+        "concrete_floor_worn_001_nor_gl_2k.jpg": 870609,
+        "concrete_floor_worn_001_arm_2k.jpg": 649883
+      }
+    },
+    {
+      "id": "wood_table_worn",
+      "use": "desk, shelf and cabinet wood",
+      "files": {
+        "wood_table_worn_diff_2k.jpg": 3108339,
+        "wood_table_worn_nor_gl_2k.jpg": 3142587,
+        "wood_table_worn_arm_2k.jpg": 3298102
+      }
+    },
+    {
+      "id": "green_metal_rust",
+      "use": "desk lamp, window frame, shelf brackets",
+      "files": {
+        "green_metal_rust_diff_2k.jpg": 787402,
+        "green_metal_rust_nor_gl_2k.jpg": 357436,
+        "green_metal_rust_arm_2k.jpg": 477556
+      }
+    },
+    {
+      "id": "dirty_carpet",
+      "use": "rug under the chair",
+      "files": {
+        "dirty_carpet_diff_2k.jpg": 3818108,
+        "dirty_carpet_nor_gl_2k.jpg": 4376244,
+        "dirty_carpet_arm_2k.jpg": 4570721
+      }
+    }
+  ],
+  "ambientcg": [
+    { "id": "Plastic018B", "file": "Plastic018B_2K-JPG.zip", "size": 27783936, "use": "yellowed CRT casing, keyboard, PC tower, blinds" },
+    { "id": "Plastic012B", "file": "Plastic012B_1K-JPG.zip", "size": 6469720, "use": "black plastic: chair base, mouse, cables" },
+    { "id": "Leather032", "file": "Leather032_1K-JPG.zip", "size": 6841177, "use": "cracked chair leather" },
+    { "id": "Paper003", "file": "Paper003_1K-JPG.zip", "size": 2545301, "use": "poster and notes" },
+    { "id": "Cardboard003", "file": "Cardboard003_1K-JPG.zip", "size": 6128451, "use": "boxes on the shelf" },
+    { "id": "Fingerprints002", "file": "Fingerprints002_1K-JPG.zip", "size": 5237463, "use": "smudges on the CRT and window glass" },
+    { "id": "SurfaceImperfections015", "file": "SurfaceImperfections015_1K-JPG.zip", "size": 8203156, "use": "dust layer" },
+    { "id": "Leaking007", "file": "Leaking007_2K-JPG.zip", "size": 4018917, "use": "damp stains on the walls" },
+    { "id": "Leaking008", "file": "Leaking008_2K-JPG.zip", "size": 4685619, "use": "damp stains on the walls" }
+  ]
+}
