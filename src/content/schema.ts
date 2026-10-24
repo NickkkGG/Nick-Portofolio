@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 export const siteSchema = z.object({
   name: z.string().min(1),
+  /** The room's title: how the site says hello. */
+  greeting: z.string().min(1),
   role: z.string().min(1),
   tagline: z.string().min(1),
 });

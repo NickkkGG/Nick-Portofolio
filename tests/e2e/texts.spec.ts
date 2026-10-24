@@ -14,14 +14,14 @@ test.describe('chapter texts', () => {
     const texts = page.getByTestId('chapter-texts');
     for (const p of [0.0005, 0.995]) {
       await jumpTo(page, p);
-      await expect(texts, `p=${p}`).toContainText('Your Name');
+      await expect(texts, `p=${p}`).toContainText("Hi, I'm Nick Nelson");
       await expect(texts, `p=${p}`).toContainText('Creative Developer');
     }
   });
 
   test('every chapter text stays on screen, clear of the nav', async ({ page }) => {
     const cases: [number, string][] = [
-      [0.03, 'Your Name'],
+      [0.03, "Hi, I'm Nick Nelson"],
       [0.311, 'Project 01'],
       [0.704, HEADLINE],
       [0.8, 'Tool 01'],

@@ -2,20 +2,20 @@ import { bulbIntensity } from '@/experience/chapters/depths/choreography';
 import { surgeLevel } from '@/experience/chapters/spiral/motion';
 import { clamp01, smoothstep } from '@/lib/math';
 import { displayState } from '@/timeline/loop';
-import { noiseBuffer } from './context';
+import { noiseBuffer, tvSpeaker } from './context';
 
 /** The steady sounds under the chapters. */
 export type Bed = 'hum' | 'wind' | 'static' | 'dark';
 
-/** In over the first `edge` of a chapter, out over its last. */
-const edges = (t: number, edge = 0.06) => smoothstep(0, edge, t) * (1 - smoothstep(1 - edge, 1, t));
+/** In over the first `into` of a chapter, out over its last `out`. */
+const edges = (t: number, into = 0.06, out = 0.06) => smoothstep(0, into, t) * (1 - smoothstep(1 - out, 1, t));
 
 /**
  * How loud each bed is (0..1) at progress `p`, scene time `time`, with the scroll moving at
  * `speed` (progress per second): the mains hum of the room's tube and lamp, and later of the
  * lit bulb; the roar of the fall and of the loop's drop back onto the roof (harder the faster
- * the visitor falls); the static of the project monitors (surging with their picture); and a
- * drone in the dark that lets go once the bulb lights.
+ * the visitor falls); the static of the project monitors, coming in gently after the landing
+ * and surging with their picture; and a drone in the dark that lets go once the bulb lights.
  */
 export function bedLevels(p: number, time: number, speed: number): Record<Bed, number> {
   const levels: Record<Bed, number> = { hum: 0, wind: 0, static: 0, dark: 0 };
@@ -30,7 +30,7 @@ export function bedLevels(p: number, time: number, speed: number): Record<Bed, n
       levels.wind = edges(t) * rush;
       break;
     case 'spiral':
-      levels.static = edges(t) * (0.4 + 0.55 * surgeLevel(time));
+      levels.static = edges(t, 0.12) * (0.4 + 0.4 * surgeLevel(time));
       break;
     case 'problem':
       levels.dark = edges(t) * 0.6 * (1 - lit);
@@ -51,16 +51,6 @@ export function bedLevels(p: number, time: number, speed: number): Record<Bed, n
 /** A looping noise source, started at once. */
 function loopedNoise(ctx: BaseAudioContext, seconds: number): AudioBufferSourceNode {
   const source = new AudioBufferSourceNode(ctx, { buffer: noiseBuffer(ctx, seconds), loop: true });
-  source.start();
-  return source;
-}
-
-/** Sparse clicks and pops, looped: the crackle on a dead channel. */
-function crackle(ctx: BaseAudioContext): AudioBufferSourceNode {
-  const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 2.3), ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < data.length; i++) if (Math.random() < 0.0009) data[i] = (Math.random() * 2 - 1) * (0.4 + 0.6 * Math.random());
-  const source = new AudioBufferSourceNode(ctx, { buffer, loop: true });
   source.start();
   return source;
 }
@@ -102,16 +92,16 @@ export class Beds {
     air.connect(rush).connect(new GainNode(ctx, { gain: 0.19 })).connect(this.faders.wind);
     this.sources.push(air, gust);
 
-    // A dead channel: band-limited hiss with its crackle.
-    const hiss = loopedNoise(ctx, 3);
-    hiss
-      .connect(new BiquadFilterNode(ctx, { type: 'highpass', frequency: 900 }))
-      .connect(new BiquadFilterNode(ctx, { type: 'bandpass', frequency: 3200, Q: 0.6 }))
-      .connect(new GainNode(ctx, { gain: 0.14 }))
-      .connect(this.faders.static);
-    const pops = crackle(ctx);
-    pops.connect(new BiquadFilterNode(ctx, { type: 'highpass', frequency: 1200 })).connect(new GainNode(ctx, { gain: 0.18 })).connect(this.faders.static);
-    this.sources.push(hiss, pops);
+    // A dead channel as an old set plays it: broadband snow through its little speaker, with the
+    // picture's 50 Hz buzz under it.
+    const set = tvSpeaker(ctx);
+    const snow = loopedNoise(ctx, 3);
+    snow.connect(set.input);
+    const sync = new OscillatorNode(ctx, { type: 'sawtooth', frequency: 50 });
+    sync.connect(new BiquadFilterNode(ctx, { type: 'bandpass', frequency: 600, Q: 0.8 })).connect(new GainNode(ctx, { gain: 0.25 })).connect(set.input);
+    sync.start();
+    set.output.connect(new GainNode(ctx, { gain: 0.085 })).connect(this.faders.static);
+    this.sources.push(snow, sync);
 
     // The dark: two saws a breath apart, far down, beating slowly.
     const drone = new BiquadFilterNode(ctx, { type: 'lowpass', frequency: 320 });

@@ -1,4 +1,4 @@
-import { audioContext, noiseBuffer } from './context';
+import { audioContext, noiseBuffer, tvSpeaker } from './context';
 import type { Cue } from './cues';
 
 /**
@@ -181,14 +181,12 @@ function channel(ctx: BaseAudioContext, { dry }: Out, at: number) {
   thump(ctx, dry, at, 220, 120, 0.04, 0.18);
   const hiss = new GainNode(ctx, { gain: 0 });
   hiss.gain.setValueAtTime(0, at + 0.012);
-  hiss.gain.linearRampToValueAtTime(0.22, at + 0.03);
-  hiss.gain.setValueAtTime(0.22, at + 0.15);
+  hiss.gain.linearRampToValueAtTime(0.12, at + 0.03);
+  hiss.gain.setValueAtTime(0.12, at + 0.15);
   hiss.gain.exponentialRampToValueAtTime(0.0001, at + 0.22);
-  noise(ctx, at + 0.012, 0.22)
-    .connect(highpass(ctx, 400))
-    .connect(band(ctx, 2600, 0.6))
-    .connect(hiss)
-    .connect(dry);
+  const set = tvSpeaker(ctx);
+  noise(ctx, at + 0.012, 0.22).connect(set.input);
+  set.output.connect(hiss).connect(dry);
   tone(ctx, 'sawtooth', at + 0.02, at + 0.2, 59.94)
     .connect(lowpass(ctx, 1200))
     .connect(envelope(ctx, at + 0.02, 0.08, 0.01, 0.15))
@@ -196,14 +194,14 @@ function channel(ctx: BaseAudioContext, { dry }: Out, at: number) {
   burst(ctx, dry, at + 0.19, 0.008, 2800, 2, 0.2);
 }
 
-/** Landing on the pillar: a body on concrete, grit, and the pillar's hollow boom far below. */
+/** Landing on the pillar: a body on concrete, a little rubble settling dully, and the pillar's hollow boom far below. */
 function landing(ctx: BaseAudioContext, { dry, wet }: Out, at: number) {
   thump(ctx, dry, at, 95, 42, 0.3, 0.75);
   noise(ctx, at, 0.15)
     .connect(lowpass(ctx, 380))
     .connect(envelope(ctx, at, 0.5, 0.003, 0.12))
     .connect(dry);
-  for (let i = 0; i < 6; i++) burst(ctx, dry, at + rand(0.01, 0.2), rand(0.02, 0.05), rand(700, 2200), 2, rand(0.06, 0.16));
+  for (let i = 0; i < 4; i++) burst(ctx, dry, at + rand(0.03, 0.25), rand(0.03, 0.06), rand(250, 700), 1.2, rand(0.05, 0.12));
   for (const [frequency, peak] of [
     [58, 0.22],
     [87, 0.12],
@@ -266,7 +264,9 @@ function bulb(ctx: BaseAudioContext, { dry, wet }: Out, at: number) {
 
 /** The camera settling on the next monitor: a flick of static, the tuner sliding, a beep as it locks on. */
 function tune(ctx: BaseAudioContext, { dry }: Out, at: number) {
-  burst(ctx, dry, at, 0.07, 3500, 0.8, 0.1);
+  const set = tvSpeaker(ctx);
+  noise(ctx, at, 0.08).connect(set.input);
+  set.output.connect(envelope(ctx, at, 0.05, 0.002, 0.07)).connect(dry);
   tone(ctx, 'sine', at, at + 0.12, 1600, 820, 0.08)
     .connect(envelope(ctx, at, 0.07, 0.003, 0.09))
     .connect(dry);

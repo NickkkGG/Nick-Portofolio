@@ -2,15 +2,17 @@ import { expect, type Page, test } from '@playwright/test';
 import { db, tapSpeakers } from './audio';
 import { freeze, jumpTo, openExperience, state } from './helpers';
 
-/** The page's loudness over the next `ms`, from its audio clock: the median and the loudest 10 ms, in dB. */
-async function listen(page: Page, ms: number): Promise<{ median: number; loudest: number }> {
+/**
+ * The page's loudness over the next `ms`, from its audio clock, in dB: its energy on average (how
+ * loud a steady sound is), the median 10 ms and the loudest 10 ms.
+ */
+async function listen(page: Page, ms: number): Promise<{ mean: number; median: number; loudest: number }> {
   const from = await page.evaluate(() => window.__audio?.currentTime ?? 0);
   await page.waitForTimeout(ms);
-  const heard = (await page.evaluate(() => window.__levels ?? []))
-    .filter(([t]) => t >= from)
-    .map(([, rms]) => db(rms))
-    .sort((a, b) => a - b);
-  return { median: heard[Math.floor(heard.length / 2)] ?? -200, loudest: heard[heard.length - 1] ?? -200 };
+  const rms = (await page.evaluate(() => window.__levels ?? [])).filter(([t]) => t >= from).map(([, level]) => level);
+  const heard = rms.map(db).sort((a, b) => a - b);
+  const energy = rms.reduce((sum, level) => sum + level * level, 0) / Math.max(1, rms.length);
+  return { mean: db(Math.sqrt(energy)), median: heard[Math.floor(heard.length / 2)] ?? -200, loudest: heard[heard.length - 1] ?? -200 };
 }
 
 const names = async (page: Page) => (await state(page)).sounds.map((s) => s.name);
@@ -38,9 +40,9 @@ test.describe('the sounds of the scene', () => {
     await jumpTo(page, 0.4);
     await page.waitForTimeout(300);
     const projects = await listen(page, 1500);
-    expect(room.median, 'the room hums').toBeGreaterThan(-60);
-    expect(projects.median, 'static is heard').toBeGreaterThan(-40);
-    expect(projects.median).toBeGreaterThan(room.median + 3);
+    expect(room.mean, 'the room hums').toBeGreaterThan(-60);
+    expect(projects.mean, 'static is heard').toBeGreaterThan(-40);
+    expect(projects.mean).toBeGreaterThan(room.mean + 3);
   });
 
   test('scrolling down out of the room breaks the floor, loudly', async ({ page }) => {

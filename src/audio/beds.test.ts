@@ -48,6 +48,10 @@ describe('the sound under each chapter', () => {
     expect(bedLevels(at('stack', 0.5), 0, 0).dark).toBe(0);
   });
 
+  it('the static comes in gently as WORK begins, so the hiss never cuts in', () => {
+    expect(bedLevels(at('spiral', 0.04), 0, 0).static).toBeLessThan(0.5 * bedLevels(at('spiral', 0.5), 0, 0).static);
+  });
+
   it('fades in and out at the chapter edges instead of cutting', () => {
     expect(bedLevels(at('spiral', 0.001), 0, 0).static).toBeLessThan(0.05);
     expect(bedLevels(at('spiral', 0.999), 0, 0).static).toBeLessThan(0.05);

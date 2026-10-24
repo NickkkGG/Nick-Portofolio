@@ -22,7 +22,7 @@ function RoomText({ t }: { t: number }) {
     <div data-overlay-item className="absolute bottom-28 left-10 font-osd">
       {/* Right after PLAY the picture is still opening: the title waits for it as noise. */}
       <p className="text-6xl tracking-wide">
-        <DecodeText text={site.name} fraction={f} delay={0.55} />
+        <DecodeText text={site.greeting} fraction={f} delay={0.55} />
       </p>
       <p className="mt-1 text-2xl tracking-widest opacity-80">
         <DecodeText text={site.role} fraction={f} delay={0.75} />

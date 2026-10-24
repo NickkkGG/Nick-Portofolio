@@ -14,6 +14,10 @@ describe('content', () => {
     expect(content.contact.map((c) => c.label)).toEqual(['EMAIL', 'GITHUB', 'LINKEDIN', 'CV']);
   });
 
+  it('the room greets the visitor by name', () => {
+    expect(content.site.greeting).toContain(content.site.name);
+  });
+
   it('a live project without media is rejected and names the field', () => {
     const result = projectSchema.safeParse({ slug: 'x', title: 'X', status: 'live', summary: 's' });
     expect(result.success).toBe(false);
