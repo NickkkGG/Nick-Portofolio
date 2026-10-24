@@ -15,6 +15,15 @@ export function ContentDocument() {
         {site.name} — {site.role}
       </h1>
       <section>
+        <h2>About</h2>
+        {about.slides.map((slide) => (
+          <div key={slide.title}>
+            <h3>{slide.title}</h3>
+            <p>{slide.body}</p>
+          </div>
+        ))}
+      </section>
+      <section>
         <h2>Work</h2>
         <ul>
           {projects.map((project) => (
@@ -27,11 +36,8 @@ export function ContentDocument() {
         </ul>
       </section>
       <section>
-        <h2>About</h2>
-        <p>{about.headline}</p>
-        {about.paragraphs.map((paragraph) => (
-          <p key={paragraph}>{paragraph}</p>
-        ))}
+        <h2>Ideas</h2>
+        <p>{about.motto}</p>
       </section>
       <section>
         <h2>Stack</h2>

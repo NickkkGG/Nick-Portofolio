@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CHAPTERS } from '@/timeline/chapters';
+import { chapterP } from '@/timeline/resolve';
 import { type Atmosphere, ATMOSPHERES, atmosphereAt, hexToRgb } from './atmosphere';
 
 const flat = (a: Atmosphere) => [...a.top, ...a.horizon, ...a.bottom, ...a.fog, a.fogDensity, a.exposure];
@@ -21,7 +22,7 @@ describe('atmosphere', () => {
   });
 
   it('the loop starts in darkness and arrives in the room atmosphere', () => {
-    expect(atmosphereAt(0.92 + 0.08 * 0.1)).toEqual(ATMOSPHERES.loop);
+    expect(atmosphereAt(chapterP('loop', 0.1))).toEqual(ATMOSPHERES.loop);
     expect(atmosphereAt(0.9999)).toEqual(atmosphereAt(0));
   });
 

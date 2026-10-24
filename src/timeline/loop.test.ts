@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { displayState, fadeAt, LOOP_TELEPORT_P, nextLoopIndex } from './loop';
+import { chapterP } from './resolve';
 
-const loopP = (t: number) => 0.92 + 0.08 * t;
+const loopP = (t: number) => chapterP('loop', t);
 
 describe('loop', () => {
   it('nextLoopIndex counts wraps', () => {
@@ -12,11 +13,11 @@ describe('loop', () => {
   });
 
   it('LOOP_TELEPORT_P sits 30% into the loop chapter', () => {
-    expect(LOOP_TELEPORT_P).toBeCloseTo(0.944);
+    expect(LOOP_TELEPORT_P).toBeCloseTo(loopP(0.3));
   });
 
   it('displayState shows the room once the camera arrives back', () => {
-    const spiral = displayState(0.5);
+    const spiral = displayState(chapterP('spiral', 0.8));
     expect(spiral.chapterId).toBe('spiral');
     expect(spiral.t).toBeCloseTo(0.8);
     expect(displayState(loopP(0.95))).toEqual({ chapterId: 'room', t: 0 });

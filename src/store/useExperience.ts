@@ -111,7 +111,7 @@ export const useExperience = create<ExperienceState>()(
     setScroll: (p, opts) => {
       const { p: prevP, loopIndex, vhsSpike, started, time, sounds } = get();
       const next = wrapProgress(p);
-      const cues = started ? scrollCues(prevP, next, opts?.programmatic ?? false, content.projects.length) : [];
+      const cues = started ? scrollCues(prevP, next, opts?.programmatic ?? false, content.projects.length, content.about.slides.length) : [];
       const nextLoop = opts?.programmatic ? loopIndex : nextLoopIndex(prevP, next, loopIndex);
       // Jumps (nav, tests) cut cleanly; only the visitor's own scrolling chews the tape.
       const chapterSpike = opts?.programmatic ? 0 : boundarySpike(prevP, next);

@@ -17,17 +17,15 @@ import { content } from '@/content';
 import { channelLabel } from '@/content/schema';
 import { CRT_AO, MODELS, useKtx2, useModel } from '@/experience/assets';
 import { LightShaft } from '@/experience/atmosphere/LightShaft';
-import { Character } from '@/experience/character/Character';
-import { spiralMix } from '@/experience/character/poses';
 import { smoothstep } from '@/lib/math';
 import { mulberry32 } from '@/lib/random';
 import { useExperience } from '@/store/useExperience';
-import { resolve } from '@/timeline/resolve';
 import { isVisible } from '@/timeline/visibility';
 import { createStaticScreens } from '@/experience/materials/staticScreens';
+import { firstMonitorPower } from '../booth/slides';
 import { useChapterFrame } from '../useChapterFrame';
 import { HangingCrt } from './HangingCrt';
-import { focusedIndex, helixSlots, monitorFocus, SPIRAL } from './helix';
+import { focusedIndex, helixSlots, monitorFocus } from './helix';
 import { surgeLevel } from './motion';
 
 /** The AO is KTX2 (CRT_AO); the probe stays WebP, an equirect for three's PMREM. */
@@ -223,6 +221,7 @@ export function Spiral() {
             title={PROJECTS[i].status === 'live' ? PROJECTS[i].title : 'NO SIGNAL'}
             channel={channelLabel(i)}
             focusAt={(t) => Math.max(0.15, monitorFocus(t, i, SLOTS.length))}
+            powerAt={i === 0 ? firstMonitorPower : undefined}
             glowRef={(spot) => {
               glowSpots.current[i] = spot;
             }}
@@ -241,16 +240,6 @@ export function Spiral() {
             focusAt={() => monitor.glow}
           />
         ))}
-
-        {/* On the pillar, facing the first monitor. Only in the chapter itself: the fall's figure
-            lands here as that chapter ends, and the two never show at once. */}
-        <Character
-          position={[0.6, SPIRAL.platformY, 0.6]}
-          pose={() => spiralMix(useExperience.getState().time)}
-          place={(figure) => {
-            figure.visible = resolve(useExperience.getState().p).chapter.id === 'spiral';
-          }}
-        />
       </group>
     </>
   );

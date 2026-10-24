@@ -29,14 +29,16 @@ Hasilnya:
 
 ## Membangun ulang dunia di bawah ruangan
 
-Tiga script ini tidak butuh bake lightmap, jadi cepat (masing-masing beberapa menit, kecuali bake AO pertama yang harus mengompilasi kernel Cycles):
+Script-script ini tidak butuh bake lightmap, jadi cepat (masing-masing beberapa menit, kecuali bake AO pertama yang harus mengompilasi kernel Cycles):
 
 ```bash
 B=/Applications/Blender.app/Contents/MacOS/Blender
 $B -b --factory-startup -P blender/scripts/crt.py      # monitor CRT gantung untuk dunia project
 $B -b --factory-startup -P blender/scripts/spiral.py   # pilar kabel, pilar jauh, kabel menjuntai, menara TV
 $B -b --factory-startup -P blender/scripts/depths.py   # lantai banjir, bohlam, problem, keycap, kaset, reruntuhan
+$B -b --factory-startup -P blender/scripts/booth.py    # bilik proyektor di bab ABOUT, AO-nya di-bake, plus preview
 npm run textures                                       # lalu semua teksturnya jadi KTX2 (lihat di bawah)
+$B -b --factory-startup blender/source/character.blend -P blender/scripts/portrait.py   # potret untuk slide pertama
 ```
 
 | File | Isi |
@@ -44,6 +46,9 @@ npm run textures                                       # lalu semua teksturnya j
 | `public/models/crt.glb` + `crt-ao.ktx2` | Satu CRT 19" ukuran asli dengan tali, baut mata, dan kabel 10 m; AO di-bake ke UV kedua. Web membesarkannya 4,5× |
 | `public/models/spiral.glb` + `spiral-probe.webp` | Dunia project (dikompres Draco): 130 kabel basah yang terpilin, relik yang terjepit di dalamnya, sarang di atas, 9 pilar jauh, kabel menjuntai, dan 8 menara TV. Probe-nya panorama untuk pantulan |
 | `public/models/depths.glb` | Dasar: lantai, reruntuhan, TV tenggelam, bohlam (3×), 10 problem, 1 keycap, 1 kaset + sampulnya, 6 bongkahan lantai untuk adegan jatuh |
+| `public/models/booth.glb` + `booth-ao.ktx2` | Bilik proyektor dari papan yang tergantung di kabel, di seberang TV pertama: dinding, atap yang jebol, kasur di bawah lubangnya, peti tempat duduk, proyektor carousel di atas tumpukan kardus, kain di tali dengan jepitan, rak rol film, sarang laba-laba. Ukurannya dari `src/experience/chapters/booth/layout.ts`. AO di-bake 2K lalu disimpan 1K; tekstur 1K, karena kamera tidak pernah cukup dekat untuk melihat bedanya |
+| `public/models/portrait.webp` | Potret karakter (render Cycles dari `character.blend`) untuk slide pertama, sampai ada foto asli |
+| `blender/previews/booth.png` | Render preview Cycles dari kamera di dalam bilik |
 
 Decoder Draco di-host sendiri di `public/draco/` (disalin dari `three/examples/jsm/libs/draco/gltf/`).
 
@@ -82,7 +87,7 @@ Blender mengekspor tekstur sebagai WebP. File WebP kecil, tapi di GPU tiap pixel
 - **ETC1S** untuk warna, ORM, dan normal map: ukuran file kira-kira sama dengan WebP, dan di GPU hanya 4 bit per pixel.
 - **UASTC** untuk lightmap dan AO: gradasinya halus, dan ETC1S akan memperlihatkan kotak-kotak. Filenya lebih besar, di GPU 8 bit per pixel.
 
-Gambar di dalam GLB ditukar langsung dan sisa file disalin apa adanya, jadi mesh Draco tidak perlu di-decode. Lightmap dan AO yang berdiri sendiri (`.webp` dari `bake.py` dan `crt.py`) diganti `.ktx2`. Gambar yang sudah KTX2 dilewati, jadi script ini aman dijalankan berkali-kali. Jalankan setiap kali selesai mengekspor ulang dari Blender. `build_room.sh` sudah menjalankannya sendiri di akhir.
+Gambar di dalam GLB ditukar langsung dan sisa file disalin apa adanya, jadi mesh Draco tidak perlu di-decode. Lightmap dan AO yang berdiri sendiri (`.webp` dari `bake.py`, `crt.py`, dan `booth.py`) diganti `.ktx2`. Gambar yang sudah KTX2 dilewati, jadi script ini aman dijalankan berkali-kali. Jalankan setiap kali selesai mengekspor ulang dari Blender. `build_room.sh` sudah menjalankannya sendiri di akhir.
 
 Tekstur yang sama di beberapa model (misalnya plastik CRT di monitor meja, CRT gantung, dan TV tenggelam) di-encode sekali dan diberi nama yang sama. Web memakai nama itu untuk menyimpan satu salinan saja (`src/experience/materials/sharedTextures.ts`).
 
@@ -103,7 +108,9 @@ Transcoder Basis di-host sendiri di `public/basis/` (disalin dari `three/example
 | `scripts/crt_model.py` | Model CRT bersama: dipakai monitor di meja, CRT gantung, dan TV yang tenggelam |
 | `scripts/crt.py` | CRT gantung → `crt.glb` |
 | `scripts/spiral.py` | Dunia project → `spiral.glb` |
-| `scripts/depths.py` | Dasar dan semua benda di bab About, Stack, Contact → `depths.glb` |
+| `scripts/depths.py` | Dasar dan semua benda di bab Ideas, Stack, Contact → `depths.glb` |
+| `scripts/booth.py` | Bilik proyektor bab About → `booth.glb`, AO-nya (`booth-ao.webp`, lalu KTX2), preview |
+| `scripts/portrait.py` | Potret karakter dari `character.blend` → `portrait.webp` |
 | `scripts/fetch_character.py` | Python biasa: download MPFB dan MakeHuman system assets |
 | `scripts/character.py` | Karakter dari MakeHuman lewat MPFB, plus baju, headphone, dan pose → `character.glb` |
 | `scripts/character_preview.py` | Render tiap pose karakter → `blender/previews/character-*.png` |
@@ -123,7 +130,8 @@ Bake hanya menyimpan cahaya (tanpa warna permukaan). Web mengalikannya dengan te
 - Posisi ditulis dalam koordinat three.js (meter, Y ke atas, −Z ke dinding belakang), lewat `V(x, y, z)`. Exporter glTF mengubahnya balik ke Y-up.
 - Custom property di objek ikut terekspor sebagai `userData` di three.js:
   - `knock: 1` menandai dinding/plafon yang bisa diketuk.
-  - `runtime` menandai mesh yang materialnya diganti di web (`screen`, `bulb`, `filament`, `led`, `glass`, `cobweb`, `decal`, `tower-screen`, `reflector`, `problem-glow`, `problem-screen`, `keycap-legend`, `cassette-label`, `cassette-window`).
+  - `runtime` menandai mesh yang materialnya diganti di web (`screen`, `bulb`, `filament`, `led`, `glass`, `cobweb`, `decal`, `tower-screen`, `reflector`, `problem-glow`, `problem-screen`, `keycap-legend`, `cassette-label`, `cassette-window`, `booth-sheet`, `booth-lens`, `booth-rope-ends`).
+  - `ao: 1` menandai objek bilik yang memakai AO hasil bake di UV kedua.
   - `atlas` (`A`/`B`) menunjukkan lightmap yang dipakai.
 - Scene menyimpan `lamp_bulb`, `moon_dir`, dan skala lightmap (`lightmaps`). Web membacanya dari `scene.userData`, jadi angka di Blender dan di web selalu sama.
 

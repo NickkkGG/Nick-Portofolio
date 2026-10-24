@@ -25,3 +25,17 @@ export function localProgress(p: number, id: ChapterId): number {
 export function chapterStartP(id: ChapterId): number {
   return getChapter(id).start;
 }
+
+/** Where a jump to chapter `id` lands: a hair past its start, or at its entry when it has one. */
+export function chapterEntryP(id: ChapterId): number {
+  const chapter = getChapter(id);
+  return chapter.entry > 0 ? chapterP(id, chapter.entry) : chapter.start + 0.002;
+}
+
+/** Global progress at chapter-local `t` of chapter `id`: the inverse of localProgress. */
+export function chapterP(id: ChapterId, t: number): number {
+  const chapter = getChapter(id);
+  if (t <= 0) return chapter.start;
+  if (t >= 1) return chapter.end;
+  return chapter.start + (chapter.end - chapter.start) * t;
+}

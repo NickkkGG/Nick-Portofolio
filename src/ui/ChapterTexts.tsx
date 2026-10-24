@@ -63,17 +63,11 @@ function SpiralText({ t }: { t: number }) {
 }
 
 function ProblemText({ t }: { t: number }) {
-  const body = revealFraction(t, TEXT_WINDOWS.problemBody);
   return (
     <div data-overlay-item className="absolute bottom-24 left-1/2 w-full max-w-2xl -translate-x-1/2 px-6 text-center">
       <p className="font-osd text-4xl">
-        <DecodeText text={about.headline} fraction={revealFraction(t, TEXT_WINDOWS.problemHeadline)} />
+        <DecodeText text={about.motto} fraction={revealFraction(t, TEXT_WINDOWS.ideasMotto)} />
       </p>
-      {about.paragraphs.map((paragraph) => (
-        <p key={paragraph} className="mt-3 font-body text-base leading-relaxed opacity-85">
-          <DecodeText text={paragraph} fraction={body} />
-        </p>
-      ))}
     </div>
   );
 }

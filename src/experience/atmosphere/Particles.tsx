@@ -1,3 +1,5 @@
+import { lampLevel } from '@/experience/chapters/booth/slides';
+import { localProgress } from '@/timeline/resolve';
 import { ParticleField, type ParticleFieldProps } from './ParticleField';
 
 /** Every chapter's floating particles; tune here. Boxes are in world metres. */
@@ -31,6 +33,38 @@ const FIELDS: (ParticleFieldProps & { name: string })[] = [
     sway: 0.1,
     opacity: 0.6,
     brightness: 1.4,
+  },
+  {
+    // Motes in the projector's beam, between the lens and the sheet: lit only while the lamp is.
+    name: 'booth-beam-dust',
+    group: 'about',
+    count: 240,
+    seed: 18,
+    min: [-0.8, -84.6, 11.45],
+    max: [0.95, -83.4, 13.85],
+    color: '#ffe2b8',
+    size: 0.0035,
+    drift: [0.004, 0.003, -0.003],
+    sway: 0.04,
+    opacity: 0.32,
+    twinkle: 0.5,
+    brightness: 1.2,
+    opacityAt: (p) => lampLevel(localProgress(p, 'about')),
+  },
+  {
+    // Dust still settling from the crash, down through the hole in the roof.
+    name: 'booth-crash-dust',
+    group: 'about',
+    count: 90,
+    seed: 19,
+    min: [-1.6, -85.2, 13.3],
+    max: [-0.5, -82.6, 14.4],
+    color: '#cfe6e0',
+    size: 0.006,
+    drift: [0, -0.08, 0],
+    sway: 0.05,
+    opacity: 0.45,
+    brightness: 1.3,
   },
   {
     name: 'spiral-snow',

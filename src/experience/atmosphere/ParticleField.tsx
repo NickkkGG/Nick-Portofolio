@@ -27,6 +27,8 @@ export interface ParticleFieldProps {
   twinkle?: number;
   /** Above 1 pushes particles into bloom. */
   brightness?: number;
+  /** Optional share of `opacity` at global p, for motes only seen while a light is on them. */
+  opacityAt?: (p: number) => number;
 }
 
 const vertexShader = /* glsl */ `
@@ -99,6 +101,7 @@ export function ParticleField({
   opacity = 1,
   twinkle = 0,
   brightness = 1,
+  opacityAt,
 }: ParticleFieldProps) {
   const ref = useRef<Points>(null);
   useChapterFrame(group, ref);
@@ -151,8 +154,9 @@ export function ParticleField({
   useFrame(({ gl, size: viewport }) => {
     const shader = material.current;
     if (!shader) return;
-    const { time, cameraPose } = useExperience.getState();
+    const { p, time, cameraPose } = useExperience.getState();
     shader.uniforms.uTime.value = time;
+    shader.uniforms.uOpacity.value = opacityAt ? opacity * opacityAt(p) : opacity;
     shader.uniforms.uViewportHeight.value = viewport.height * gl.getPixelRatio();
     if (cameraPose) shader.uniforms.uFocus.value = focusDistance(cameraPose);
   });

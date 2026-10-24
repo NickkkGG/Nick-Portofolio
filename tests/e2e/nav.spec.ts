@@ -1,15 +1,15 @@
 import { expect, test } from '@playwright/test';
-import { jumpTo, openExperience, play, state, waitFrames } from './helpers';
+import { chapterP, jumpTo, openExperience, play, state, waitFrames } from './helpers';
 
 test('nav lands in the right chapter from anywhere', async ({ page }) => {
   await openExperience(page);
   await play(page);
   const targets: [string, string][] = [
+    ['ABOUT', 'about'],
     ['WORK', 'spiral'],
-    ['ABOUT', 'problem'],
     ['CONTACT', 'contact'],
   ];
-  for (const start of [0.05, 0.96]) {
+  for (const start of [chapterP('room', 0.5), chapterP('loop', 0.5)]) {
     for (const [button, chapter] of targets) {
       await jumpTo(page, start);
       await page.getByRole('button', { name: button }).click();
@@ -19,4 +19,12 @@ test('nav lands in the right chapter from anywhere', async ({ page }) => {
       expect(s.loopIndex, `${button} from ${start}`).toBe(1);
     }
   }
+});
+
+test('ABOUT lands on the first slide, not in the dust of the crash', async ({ page }) => {
+  await openExperience(page);
+  await play(page);
+  await page.getByRole('button', { name: 'ABOUT' }).click();
+  await waitFrames(page, 3);
+  await expect(page.getByTestId('slide-counter')).toHaveText('SLIDE 01 / 06');
 });

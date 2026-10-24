@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { freeze, jumpTo, openExperience, play } from './helpers';
+import { SLIDES } from '../../src/experience/chapters/booth/slides';
+import { chapterP, freeze, jumpTo, openExperience, play } from './helpers';
 
 test.describe('OSD', () => {
   test.beforeEach(async ({ page }) => {
@@ -10,18 +11,33 @@ test.describe('OSD', () => {
   test('the OSD names every chapter', async ({ page }) => {
     await freeze(page);
     const cases: [number, string][] = [
-      [0.05, 'CH-01 / ROOM'],
-      [0.18, 'CH-02 / FALL'],
-      [0.41, 'CH-03 / WORK'],
-      [0.64, 'CH-04 / ABOUT'],
-      [0.77, 'CH-05 / STACK'],
-      [0.87, 'CH-06 / CONTACT'],
-      [0.96, 'CH-07 / LOOP'],
-      [0.995, 'CH-01 / ROOM'],
+      [chapterP('room', 0.5), 'CH-01 / ROOM'],
+      [chapterP('fall', 0.5), 'CH-02 / FALL'],
+      [chapterP('about', 0.5), 'CH-03 / ABOUT'],
+      [chapterP('spiral', 0.5), 'CH-04 / WORK'],
+      [chapterP('problem', 0.5), 'CH-05 / IDEAS'],
+      [chapterP('stack', 0.5), 'CH-06 / STACK'],
+      [chapterP('contact', 0.5), 'CH-07 / CONTACT'],
+      [chapterP('loop', 0.5), 'CH-08 / LOOP'],
+      [chapterP('loop', 0.95), 'CH-01 / ROOM'],
     ];
     for (const [p, label] of cases) {
       await jumpTo(page, p);
       await expect(page.getByTestId('osd-chapter'), `p=${p}`).toHaveText(label);
+    }
+  });
+
+  test('in the booth it counts the slides, and only while one is up', async ({ page }) => {
+    await freeze(page);
+    const counter = page.getByTestId('slide-counter');
+    const slide = (i: number) => chapterP('about', SLIDES.from + ((i + 0.5) * (SLIDES.to - SLIDES.from)) / 6);
+    await jumpTo(page, slide(0));
+    await expect(counter).toHaveText('SLIDE 01 / 06');
+    await jumpTo(page, slide(2));
+    await expect(counter).toHaveText('SLIDE 03 / 06');
+    for (const p of [chapterP('about', 0.02), chapterP('about', 0.95), chapterP('spiral', 0.5)]) {
+      await jumpTo(page, p);
+      await expect(counter, `p=${p}`).toHaveCount(0);
     }
   });
 

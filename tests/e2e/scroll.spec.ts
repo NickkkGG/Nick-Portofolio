@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { jumpTo, openExperience, play, state, waitForScene, waitFrames } from './helpers';
+import { chapterP, jumpTo, openExperience, play, state, waitForScene, waitFrames } from './helpers';
 
 test.describe('infinite scroll', () => {
   test.beforeEach(async ({ page }) => {
@@ -34,11 +34,12 @@ test.describe('infinite scroll', () => {
 
   test('resize keeps the story position', async ({ page }) => {
     await play(page);
-    await jumpTo(page, 0.41);
+    const work = chapterP('spiral', 0.5);
+    await jumpTo(page, work);
     await page.setViewportSize({ width: 1000, height: 640 });
     await waitFrames(page, 5);
     const s = await state(page);
-    expect(Math.abs(s.p - 0.41)).toBeLessThan(0.005);
+    expect(Math.abs(s.p - work)).toBeLessThan(0.005);
     expect(s.displayChapterId).toBe('spiral');
   });
 
@@ -76,7 +77,7 @@ test.describe('infinite scroll', () => {
     }
     await expect.poll(async () => (await state(page)).loopIndex).toBe(2);
     // Natively the page would stop at the end of the document and stay at p = 0.
-    await expect.poll(async () => (await state(page)).p).toBeGreaterThan(0.1);
+    await expect.poll(async () => (await state(page)).p).toBeGreaterThan(chapterP('room', 0.5));
   });
 
   test('ArrowUp at the start wraps back to the end of the loop', async ({ page }) => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { content } from './index';
-import { channelLabel, contactSchema, padProjects, type Project, projectSchema, projectsSchema, scribbledHref } from './schema';
+import { aboutSchema, channelLabel, contactSchema, padProjects, type Project, projectSchema, projectsSchema, scribbledHref } from './schema';
 
 function noSignal(n: number): Project {
   const id = String(n).padStart(2, '0');
@@ -16,6 +16,28 @@ describe('content', () => {
 
   it('the room greets the visitor by name', () => {
     expect(content.site.greeting).toContain(content.site.name);
+  });
+
+  it('the about is six slides, the first one naming the owner', () => {
+    expect(content.about.slides).toHaveLength(6);
+    expect(content.about.slides[0].title).toContain(content.site.name);
+    expect(content.about.motto).toBe('Every problem I run into becomes an idea.');
+  });
+
+  it('the stack starts with what the owner has used', () => {
+    expect(content.stack.slice(0, 3).map((item) => item.name)).toEqual(['JavaScript', 'Python', 'HTML']);
+  });
+
+  it('a slide too long for the sheet is rejected and names the field', () => {
+    const result = aboutSchema.safeParse({ slides: [{ title: 'Hi', body: 'word '.repeat(40) }], motto: 'm' });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.some((issue) => issue.path.includes('body'))).toBe(true);
+  });
+
+  it('the booth holds at most eight slides', () => {
+    const slides = Array.from({ length: 9 }, (_, i) => ({ title: `S${i}`, body: 'b' }));
+    expect(aboutSchema.safeParse({ slides, motto: 'm' }).success).toBe(false);
+    expect(aboutSchema.safeParse({ slides: slides.slice(0, 8), motto: 'm' }).success).toBe(true);
   });
 
   it('a live project without media is rejected and names the field', () => {

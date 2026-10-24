@@ -1,24 +1,34 @@
-import type { ChapterId } from './chapters';
+import { type ChapterId, getChapter } from './chapters';
 import { LOOP_TELEPORT_P } from './loop';
-import { wrapProgress } from './resolve';
+import { chapterP, wrapProgress } from './resolve';
 
 export type VisibilityGroup = ChapterId | 'depths';
 
 type Range = readonly [start: number, end: number, endInclusive: boolean];
 
+/** How far past its own chapter a group is still rendered, in p. */
+const MARGIN = 0.02;
+const around = (id: ChapterId): Range => [Math.max(0, getChapter(id).start - MARGIN), Math.min(1, getChapter(id).end + MARGIN), true];
+
 /** When each group of objects is rendered: its chapter plus a margin (spec §4.3). */
 const RANGES: Record<VisibilityGroup, readonly Range[]> = {
   room: [
-    [0, 0.12, true],
+    [0, getChapter('room').end + MARGIN, true],
     [LOOP_TELEPORT_P, 1, true],
   ],
-  fall: [[0.08, 0.28, true]],
-  spiral: [[0.24, 0.58, true]],
-  problem: [[0.54, 0.74, true]],
-  stack: [[0.7, 0.84, true]],
-  contact: [[0.8, 0.94, true]],
-  loop: [[0.9, 1, true]],
-  depths: [[0.54, LOOP_TELEPORT_P, false]],
+  fall: [around('fall')],
+  // The booth comes up under the end of the fall and stays until the camera is past the first monitor.
+  about: [[chapterP('fall', 0.75), chapterP('spiral', 0.15), true]],
+  // The pillar: below the end of the fall, then hidden behind the booth walls and the sheet until it drops.
+  spiral: [
+    [chapterP('fall', 0.75), chapterP('about', 0.15), true],
+    [chapterP('about', 0.75), getChapter('spiral').end + MARGIN, true],
+  ],
+  problem: [around('problem')],
+  stack: [around('stack')],
+  contact: [around('contact')],
+  loop: [around('loop')],
+  depths: [[getChapter('problem').start - MARGIN, LOOP_TELEPORT_P, false]],
 };
 
 export function isVisible(group: VisibilityGroup, p: number): boolean {

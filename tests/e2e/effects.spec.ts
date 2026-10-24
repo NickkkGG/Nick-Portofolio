@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { LOOP_TELEPORT_P } from '../../src/timeline/loop';
-import { freeze, jumpTo, openExperience, play, shot, waitFrames } from './helpers';
+import { chapterP, freeze, jumpTo, openExperience, play, shot, waitFrames } from './helpers';
 import { brightRatio, diffRatio, meanLuminance } from './utils/image';
 
 test.describe('VHS effect', () => {
@@ -23,10 +23,13 @@ test.describe('VHS effect', () => {
   });
 
   test('frozen time renders identical frames', async ({ page }) => {
-    await jumpTo(page, 0.41);
-    const a = await shot(page, { maskOverlay: true });
-    await waitFrames(page, 5);
-    const b = await shot(page, { maskOverlay: true });
-    expect(diffRatio(a, b, 8)).toBe(0);
+    // The booth's slides, beam and dust, and the project world's static.
+    for (const p of [chapterP('about', 0.3), chapterP('spiral', 0.5)]) {
+      await jumpTo(page, p);
+      const a = await shot(page, { maskOverlay: true });
+      await waitFrames(page, 5);
+      const b = await shot(page, { maskOverlay: true });
+      expect(diffRatio(a, b, 8), `p=${p}`).toBe(0);
+    }
   });
 });

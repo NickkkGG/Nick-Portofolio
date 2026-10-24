@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CHAPTERS, type ChapterId } from '@/timeline/chapters';
+import { BEAM_OUT_T } from '@/experience/chapters/booth/slides';
 import { bedLevels } from './beds';
 
 const at = (id: ChapterId, t: number) => {
@@ -48,14 +49,28 @@ describe('the sound under each chapter', () => {
     expect(bedLevels(at('stack', 0.5), 0, 0).dark).toBe(0);
   });
 
-  it('the static comes in gently as WORK begins, so the hiss never cuts in', () => {
-    expect(bedLevels(at('spiral', 0.04), 0, 0).static).toBeLessThan(0.5 * bedLevels(at('spiral', 0.5), 0, 0).static);
+  it('the first monitor hisses in gently once the beam finds it, so the static never cuts in', () => {
+    expect(bedLevels(at('about', 0.5), 0, 0).static).toBe(0);
+    expect(bedLevels(at('about', BEAM_OUT_T), 0, 0).static).toBeCloseTo(0, 6);
+    expect(bedLevels(at('about', 0.92), 0, 0).static).toBeGreaterThan(0);
+    expect(bedLevels(at('about', 0.92), 0, 0).static).toBeLessThan(0.5 * bedLevels(at('spiral', 0.5), 0, 0).static);
   });
 
-  it('fades in and out at the chapter edges instead of cutting', () => {
-    expect(bedLevels(at('spiral', 0.001), 0, 0).static).toBeLessThan(0.05);
+  it('the projector fan hums in the booth once its lamp is on, and stays behind as the camera floats out', () => {
+    expect(bedLevels(at('about', 0.005), 0, 0).projector).toBe(0);
+    expect(bedLevels(at('about', 0.5), 0, 0).projector).toBeGreaterThan(0.3);
+    expect(bedLevels(at('about', 0.99), 0, 0).projector).toBeLessThan(bedLevels(at('about', 0.5), 0, 0).projector);
+    expect(bedLevels(at('spiral', 0.2), 0, 0).projector).toBe(0);
+    for (const id of ['room', 'fall', 'problem', 'contact'] as const) expect(bedLevels(at(id, 0.5), 0, 0).projector).toBe(0);
+  });
+
+  it('fades in and out at the chapter edges instead of cutting, and carries on through the booth window', () => {
     expect(bedLevels(at('spiral', 0.999), 0, 0).static).toBeLessThan(0.05);
     expect(bedLevels(at('fall', 0.001), 0, 0).wind).toBeLessThan(0.05);
+    const out = bedLevels(at('about', 0.9999), 0, 0);
+    const into = bedLevels(at('spiral', 0.0001), 0, 0);
+    expect(Math.abs(out.static - into.static)).toBeLessThan(0.02);
+    expect(Math.abs(out.projector - into.projector)).toBeLessThan(0.02);
   });
 
   it('never goes past full', () => {

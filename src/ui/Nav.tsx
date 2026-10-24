@@ -7,8 +7,8 @@ import type { ChapterId } from '@/timeline/chapters';
 import { DecodeText } from './DecodeText';
 
 const LINKS: { label: string; chapter: ChapterId }[] = [
+  { label: 'ABOUT', chapter: 'about' },
   { label: 'WORK', chapter: 'spiral' },
-  { label: 'ABOUT', chapter: 'problem' },
   { label: 'CONTACT', chapter: 'contact' },
 ];
 

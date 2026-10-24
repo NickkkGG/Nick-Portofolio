@@ -3,6 +3,7 @@ import { CHAPTERS, type ChapterId } from '@/timeline/chapters';
 import { LOOP_ARRIVE_T, LOOP_TELEPORT_T } from '@/timeline/loop';
 import { lampNervousness } from '@/experience/chapters/room/knock';
 import { flickerDips } from '@/experience/flicker';
+import { BEAM_OUT_T, PROJECTOR_ON_T, SHEET_DROP_T, SLIDES } from '@/experience/chapters/booth/slides';
 import { type Ambient, ambientSounds, dripsBetween, glitchesBetween, scrollCues } from './cues';
 
 const at = (id: ChapterId, t: number) => {
@@ -10,15 +11,41 @@ const at = (id: ChapterId, t: number) => {
   return chapter.start + (chapter.end - chapter.start) * t;
 };
 const PROJECTS = 6;
-const cues = (from: number, to: number, programmatic = false) => scrollCues(from, to, programmatic, PROJECTS);
+const SLIDES_COUNT = 6;
+const cues = (from: number, to: number, programmatic = false) => scrollCues(from, to, programmatic, PROJECTS, SLIDES_COUNT);
 
 describe('sounds the scroll sets off', () => {
   it('scrolling down out of the room breaks the floor into another world', () => {
     expect(cues(at('room', 0.95), at('fall', 0.02))).toEqual(['floor-break']);
   });
 
-  it('the fall ends with a landing on the pillar', () => {
-    expect(cues(at('fall', 0.98), at('spiral', 0.002))).toEqual(['landing']);
+  it('the fall ends crashing into the booth', () => {
+    expect(cues(at('fall', 0.98), at('about', 0.002))).toEqual(['landing']);
+  });
+
+  it('out through the booth window the work starts without switching channel', () => {
+    expect(cues(at('about', 0.995), at('spiral', 0.005))).toEqual([]);
+  });
+
+  it('the projector starts once the dust is settling', () => {
+    expect(cues(at('about', PROJECTOR_ON_T - 0.005), at('about', PROJECTOR_ON_T + 0.005))).toEqual(['projector']);
+    expect(cues(at('about', PROJECTOR_ON_T + 0.005), at('about', PROJECTOR_ON_T - 0.005))).toEqual([]);
+  });
+
+  it('the carousel clicks at every slide change, either way, and at the blank after the last', () => {
+    const span = (SLIDES.to - SLIDES.from) / 6;
+    const change = SLIDES.from + 2 * span;
+    expect(cues(at('about', change - 0.005), at('about', change + 0.005))).toEqual(['slide']);
+    expect(cues(at('about', change + 0.005), at('about', change - 0.005))).toEqual(['slide']);
+    expect(cues(at('about', SLIDES.to - 0.005), at('about', SLIDES.to + 0.005))).toEqual(['slide']);
+    // One click a step, however many slides a fast scroll skips.
+    expect(cues(at('about', 0.2), at('about', 0.6))).toEqual(['slide']);
+  });
+
+  it('the rope snaps scrolling on, and the beam finds the first monitor, which tunes in', () => {
+    expect(cues(at('about', SHEET_DROP_T - 0.005), at('about', SHEET_DROP_T + 0.005))).toEqual(['sheet']);
+    expect(cues(at('about', SHEET_DROP_T + 0.005), at('about', SHEET_DROP_T - 0.005))).toEqual([]);
+    expect(cues(at('about', BEAM_OUT_T - 0.005), at('about', BEAM_OUT_T + 0.005))).toEqual(['tune']);
   });
 
   it('every other chapter change switches channel, and so does scrolling back up', () => {

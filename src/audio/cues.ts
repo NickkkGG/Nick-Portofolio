@@ -1,3 +1,4 @@
+import { BEAM_OUT_T, PROJECTOR_ON_T, SHEET_DROP_T, slideAt } from '@/experience/chapters/booth/slides';
 import { bulbIntensity, dripRipples } from '@/experience/chapters/depths/choreography';
 import { lampNervousness, roomT } from '@/experience/chapters/room/knock';
 import { focusedIndex } from '@/experience/chapters/spiral/helix';
@@ -6,7 +7,18 @@ import { type ChapterId, getChapter } from '@/timeline/chapters';
 import { displayState, LOOP_TELEPORT_P } from '@/timeline/loop';
 
 /** One-off sounds of the story, played by sfx.ts (the knock has its own, audio/knock.ts). */
-export type Cue = 'power-on' | 'floor-break' | 'landing' | 'channel' | 'seam' | 'bulb' | 'tapes' | 'tune';
+export type Cue =
+  | 'power-on'
+  | 'floor-break'
+  | 'landing'
+  | 'projector'
+  | 'slide'
+  | 'sheet'
+  | 'channel'
+  | 'seam'
+  | 'bulb'
+  | 'tapes'
+  | 'tune';
 
 const within = (id: ChapterId, t: number) => {
   const chapter = getChapter(id);
@@ -16,6 +28,10 @@ const within = (id: ChapterId, t: number) => {
 const BULB_P = within('problem', 0.62);
 /** The first tape is halfway up out of the water (cassettePose). */
 const TAPES_P = within('contact', 0.07);
+/** In the booth (booth/slides.ts): the lamp catching, the rope snapping, the beam reaching the first monitor. */
+const PROJECTOR_P = within('about', PROJECTOR_ON_T);
+const SHEET_P = within('about', SHEET_DROP_T);
+const BEAM_P = within('about', BEAM_OUT_T);
 
 /** How far `p` is ahead of `prevP` round the loop, -0.5..0.5. */
 export const ahead = (prevP: number, p: number) => ((p - prevP + 1.5) % 1) - 0.5;
@@ -29,10 +45,11 @@ function passes(prevP: number, p: number, mark: number): boolean {
 
 /**
  * The one-off sounds of a scroll from `prevP` to `p`. A chapter change switches channel, except
- * where the story has its own sound for it: the floor giving way under the room, the landing on
- * the pillar. Jumps (the nav, keys) only switch channel; the beats they skip stay silent.
+ * where the story has its own sound for it: the floor giving way under the room, the crash into
+ * the booth, and none at all out of the booth window, where the camera never cuts. Jumps (the
+ * nav, keys) only switch channel; the beats they skip stay silent.
  */
-export function scrollCues(prevP: number, p: number, programmatic: boolean, projects: number): Cue[] {
+export function scrollCues(prevP: number, p: number, programmatic: boolean, projects: number, slides: number): Cue[] {
   if (prevP === p) return [];
   const before = displayState(prevP);
   const after = displayState(p);
@@ -41,10 +58,16 @@ export function scrollCues(prevP: number, p: number, programmatic: boolean, proj
   const forward = ahead(prevP, p) > 0;
   const cues: Cue[] = [];
   if (changed) {
-    if (forward && before.chapterId === 'room' && after.chapterId === 'fall') cues.push('floor-break');
-    else if (forward && before.chapterId === 'fall' && after.chapterId === 'spiral') cues.push('landing');
-    else cues.push('channel');
+    const through = (a: ChapterId, b: ChapterId) => before.chapterId === a && after.chapterId === b;
+    if (forward && through('room', 'fall')) cues.push('floor-break');
+    else if (forward && through('fall', 'about')) cues.push('landing');
+    else if (!through('about', 'spiral') && !through('spiral', 'about')) cues.push('channel');
   }
+  if (passes(prevP, p, PROJECTOR_P)) cues.push('projector');
+  // The carousel clicks once a step, either way, however many slides a fast scroll skips.
+  if (!changed && after.chapterId === 'about' && slideAt(before.t, slides).index !== slideAt(after.t, slides).index) cues.push('slide');
+  if (passes(prevP, p, SHEET_P)) cues.push('sheet');
+  if (passes(prevP, p, BEAM_P)) cues.push('tune');
   if (passes(prevP, p, LOOP_TELEPORT_P)) cues.push('seam');
   if (passes(prevP, p, BULB_P)) cues.push('bulb');
   if (passes(prevP, p, TAPES_P)) cues.push('tapes');

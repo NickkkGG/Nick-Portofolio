@@ -1,4 +1,4 @@
-import { useGLTF } from '@react-three/drei';
+import { useGLTF, useTexture } from '@react-three/drei';
 import { useLoader } from '@react-three/fiber';
 import { useMemo } from 'react';
 import type { Texture, WebGLRenderer } from 'three';
@@ -11,6 +11,7 @@ export const MODELS = {
   crt: '/models/crt.glb',
   spiral: '/models/spiral.glb',
   depths: '/models/depths.glb',
+  booth: '/models/booth.glb',
   character: '/models/character.glb',
 } as const;
 
@@ -26,6 +27,12 @@ export const ROOM_LIGHTMAPS = {
 
 /** The hanging CRT's baked AO, on its second UV set. */
 export const CRT_AO = { ao: '/models/crt-ao.ktx2' } as const;
+
+/** The projection booth's baked AO, on its second UV set (blender/scripts/booth.py). */
+export const BOOTH_AO = { ao: '/models/booth-ao.ktx2' } as const;
+
+/** The figure's portrait on the first slide (blender/scripts/portrait.py), until there is a photo. */
+export const PORTRAIT = '/models/portrait.webp';
 
 const DRACO = '/draco/';
 
@@ -61,6 +68,8 @@ export function loadAssets(gl: WebGLRenderer): void {
   for (const url of Object.values(MODELS)) useGLTF.preload(url, DRACO, false, withKtx2);
   useLoader.preload(ktx2, Object.values(ROOM_LIGHTMAPS));
   useLoader.preload(ktx2, Object.values(CRT_AO));
+  useLoader.preload(ktx2, Object.values(BOOTH_AO));
+  useTexture.preload(PORTRAIT);
 }
 
 export const useModel = (url: string) => useGLTF(url, DRACO, false, withKtx2);

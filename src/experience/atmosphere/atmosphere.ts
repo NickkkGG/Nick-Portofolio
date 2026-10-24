@@ -32,6 +32,8 @@ const preset = (top: string, horizon: string, bottom: string, fog: string, fogDe
 export const ATMOSPHERES: Record<ChapterId, Atmosphere> = {
   room: preset('#1a2e3a', '#0d1a20', '#050708', '#0c1418', 0.008, 1.65),
   fall: preset('#2a4452', '#0e1b21', '#030405', '#0a1317', 0.012, 1.35),
+  // The booth hangs in the same teal dark as the pillar, only dimmer: inside, the projector does the lighting.
+  about: preset('#17403e', '#0a1f20', '#030707', '#0b2122', 0.012, 1.5),
   spiral: preset('#1d5a56', '#0d2b2c', '#030a0b', '#0f2f30', 0.016, 1.4),
   problem: preset('#4a1210', '#1e0807', '#050202', '#240a08', 0.022, 1.35),
   stack: preset('#4a3010', '#1e1306', '#050302', '#24170a', 0.02, 1.45),

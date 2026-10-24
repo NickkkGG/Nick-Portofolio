@@ -194,7 +194,7 @@ function channel(ctx: BaseAudioContext, { dry }: Out, at: number) {
   burst(ctx, dry, at + 0.19, 0.008, 2800, 2, 0.2);
 }
 
-/** Landing on the pillar: a body on concrete, a little rubble settling dully, and the pillar's hollow boom far below. */
+/** Crashing into the booth: a body through planks onto old mattresses, splinters and grit settling, and the boom of the pillar below. */
 function landing(ctx: BaseAudioContext, { dry, wet }: Out, at: number) {
   thump(ctx, dry, at, 95, 42, 0.3, 0.75);
   noise(ctx, at, 0.15)
@@ -211,6 +211,72 @@ function landing(ctx: BaseAudioContext, { dry, wet }: Out, at: number) {
       .connect(envelope(ctx, at + 0.02, peak, 0.01, 1.4))
       .connect(wet);
   }
+}
+
+/** The slide projector jolted on: its rocker switch, the fan motor spinning up to speed, the lamp catching with a tick. */
+function projector(ctx: BaseAudioContext, { dry }: Out, at: number) {
+  burst(ctx, dry, at, 0.01, 2200, 2, 0.35);
+  thump(ctx, dry, at, 130, 70, 0.06, 0.3);
+  tone(ctx, 'sawtooth', at + 0.03, at + 1.3, 22, 96, 0.9)
+    .connect(lowpass(ctx, 600, 1))
+    .connect(envelope(ctx, at + 0.03, 0.09, 0.4, 0.8))
+    .connect(dry);
+  const whir = band(ctx, 300, 1.2);
+  whir.frequency.setValueAtTime(300, at + 0.05);
+  whir.frequency.exponentialRampToValueAtTime(1400, at + 1);
+  noise(ctx, at + 0.05, 1.2)
+    .connect(whir)
+    .connect(envelope(ctx, at + 0.05, 0.06, 0.5, 0.65))
+    .connect(dry);
+  burst(ctx, dry, at + 0.18, 0.006, 3400, 3, 0.18);
+  tone(ctx, 'sine', at + 0.2, at + 1.2, 100)
+    .connect(envelope(ctx, at + 0.2, 0.08, 0.1, 0.9))
+    .connect(dry);
+}
+
+/** A carousel projector changing slides: ka-, the slide lifting out of the gate, the tray turning a notch, -chunk as the next one drops in. */
+function slide(ctx: BaseAudioContext, { dry, wet }: Out, at: number) {
+  burst(ctx, dry, at, 0.012, 1900, 2.5, 0.4);
+  thump(ctx, dry, at, 180, 90, 0.05, 0.25);
+  noise(ctx, at + 0.02, 0.1)
+    .connect(band(ctx, 3200, 1.5))
+    .connect(envelope(ctx, at + 0.02, 0.08, 0.02, 0.07))
+    .connect(dry);
+  burst(ctx, dry, at + 0.12, 0.006, 4200, 3, 0.18);
+  burst(ctx, dry, at + 0.15, 0.006, 3600, 3, 0.12);
+  burst(ctx, dry, at + 0.24, 0.014, 1500, 2, 0.45);
+  thump(ctx, dry, at + 0.24, 140, 75, 0.07, 0.35);
+  burst(ctx, wet, at + 0.25, 0.02, 2000, 1.5, 0.08);
+}
+
+/** The rope snapping and the sheet dropping: fibres tearing, the cloth flapping down, a soft heap, and the dark outside opening up. */
+function sheet(ctx: BaseAudioContext, { dry, wet }: Out, at: number) {
+  noise(ctx, at, 0.05)
+    .connect(highpass(ctx, 1200))
+    .connect(envelope(ctx, at, 0.45, 0.001, 0.045))
+    .connect(dry);
+  tone(ctx, 'triangle', at, at + 0.25, 220, 140, 0.2)
+    .connect(band(ctx, 400, 3))
+    .connect(envelope(ctx, at, 0.12, 0.003, 0.2))
+    .connect(dry);
+  const flap = new GainNode(ctx, { gain: 0.5 });
+  tone(ctx, 'sine', at + 0.04, at + 0.6, 14)
+    .connect(new GainNode(ctx, { gain: 0.5 }))
+    .connect(flap.gain);
+  noise(ctx, at + 0.04, 0.55)
+    .connect(band(ctx, 900, 0.8))
+    .connect(flap)
+    .connect(envelope(ctx, at + 0.04, 0.3, 0.12, 0.4))
+    .connect(dry);
+  noise(ctx, at + 0.5, 0.15)
+    .connect(lowpass(ctx, 500))
+    .connect(envelope(ctx, at + 0.5, 0.25, 0.005, 0.13))
+    .connect(dry);
+  thump(ctx, dry, at + 0.5, 90, 50, 0.12, 0.2);
+  noise(ctx, at + 0.3, 1.6)
+    .connect(band(ctx, 300, 0.6))
+    .connect(envelope(ctx, at + 0.3, 0.08, 0.5, 1))
+    .connect(wet);
 }
 
 /** The loop's seam, in the black: the tape rewinding with a chattering squeal, then catching again. */
@@ -383,6 +449,9 @@ const VOICES: Record<Sfx, Voice> = {
   'power-on': powerOn,
   'floor-break': floorBreak,
   landing,
+  projector,
+  slide,
+  sheet,
   channel,
   seam,
   bulb,
@@ -403,6 +472,9 @@ const MIX: Record<Sfx, number> = {
   'power-on': 1.6,
   'floor-break': 1,
   landing: 1,
+  projector: 2.2,
+  slide: 1.6,
+  sheet: 1.4,
   channel: 1.25,
   seam: 1,
   bulb: 1,
@@ -424,6 +496,9 @@ const SPACING: Record<Sfx, number> = {
   'power-on': 1,
   'floor-break': 1.5,
   landing: 0.8,
+  projector: 1.5,
+  slide: 0.12,
+  sheet: 1,
   channel: 0.15,
   seam: 1,
   bulb: 0.8,

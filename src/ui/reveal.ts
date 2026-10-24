@@ -18,8 +18,8 @@ const w = (inStart: number, inEnd: number, outStart: number, outEnd: number): Re
 export const TEXT_WINDOWS = {
   roomIntro: w(0, 0, 0.55, 0.75),
   spiralProject: w(0.1, 0.16, 0.94, 1),
-  problemHeadline: w(0.75, 0.82, 0.95, 1),
-  problemBody: w(0.82, 0.92, 0.95, 1),
+  // As the bulb lights (depths/choreography.ts bulbIntensity), and up for the rest of the chapter.
+  ideasMotto: w(0.6, 0.68, 0.95, 1),
   stackList: w(0.05, 0.4, 0.9, 1),
   contactTagline: w(0.2, 0.45, 0.92, 1),
   contactHint: w(0.3, 0.45, 0.92, 1),

@@ -23,6 +23,8 @@ const MOODS: Record<ChapterId, Mood> = {
   room: { tone: 3200, pad: 1400, notes: 0.16, pedal: 0, level: 1 },
   // Falling: the chords open up over a held low note, the melody holds its breath.
   fall: { tone: 4200, pad: 2200, notes: 0.04, pedal: 1, level: 1 },
+  // The booth: as if through its plank walls, sparse, so the slides can be read over it.
+  about: { tone: 2600, pad: 1200, notes: 0.1, pedal: 0.3, level: 0.85 },
   // The projects: brighter, the melody wanders between the monitors.
   spiral: { tone: 3800, pad: 1800, notes: 0.26, pedal: 0, level: 1 },
   // The problems circling in the dark: muffled and tense until the bulb lights (see moodAt).

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { freeze, jumpTo, openExperience, play, state, waitFrames } from './helpers';
+import { chapterP, freeze, jumpTo, openExperience, play, state, waitFrames } from './helpers';
 
 /** Screen spots at the opening camera: bare back wall above the desk, and the monitor. */
 const WALL = { x: 880, y: 120 };
@@ -34,7 +34,7 @@ test.describe('room', () => {
   });
 
   test('the walls stop answering once the floor starts to give', async ({ page }) => {
-    await jumpTo(page, 0.07);
+    await jumpTo(page, chapterP('room', 0.7));
     await page.mouse.click(WALL.x, WALL.y);
     await waitFrames(page, 2);
     expect(knocks((await state(page)).sounds)).toEqual([]);

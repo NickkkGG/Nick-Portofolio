@@ -43,9 +43,17 @@ export const projectsSchema = z.array(projectSchema).superRefine((projects, ctx)
   });
 });
 
+/** One slide on the booth's sheet: short enough to read while the scroll keeps going. */
+export const slideSchema = z.object({
+  title: z.string().min(1).max(32, 'a slide title fits on the sheet in 32 characters'),
+  body: z.string().min(1).max(140, 'a slide body fits on the sheet in 140 characters'),
+});
+
 export const aboutSchema = z.object({
-  headline: z.string().min(1),
-  paragraphs: z.array(z.string().min(1)).min(1),
+  /** The projector's slides, one per step of scroll: who, how, and what next (spec: the booth). */
+  slides: z.array(slideSchema).min(1).max(8, 'the booth holds at most eight slides'),
+  /** The line the bulb lights up in IDEAS. */
+  motto: z.string().min(1),
 });
 
 export const stackSchema = z.array(
@@ -67,6 +75,7 @@ export const contactSchema = z.array(
 export type Site = z.infer<typeof siteSchema>;
 export type Project = z.infer<typeof projectSchema>;
 export type About = z.infer<typeof aboutSchema>;
+export type Slide = z.infer<typeof slideSchema>;
 export type StackItem = z.infer<typeof stackSchema>[number];
 export type ContactLink = z.infer<typeof contactSchema>[number];
 

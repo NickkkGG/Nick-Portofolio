@@ -66,8 +66,9 @@ def _find(folder, suffix):
     return found[0] if found else None
 
 
-def ambientcg(asset_id):
-    """Colour, normal, alpha as shipped; occlusion/roughness/metal packed into one image."""
+def ambientcg(asset_id, size=None):
+    """Colour, normal, alpha as shipped; occlusion/roughness/metal packed into one image.
+    With `size`, copies scaled down to that many pixels across."""
     folder = TEXTURES / "ambientcg" / asset_id
     color = _find(folder, "Color")
     rough = _find(folder, "Roughness")
@@ -83,13 +84,16 @@ def ambientcg(asset_id):
         orm[..., 1] = r[..., 0]
         orm[..., 2] = read(metal_path)[..., 0] if metal_path else 0.0
         write(orm, orm_path, fmt="PNG")
-    return {
+    maps = {
         # Re-saved as RGB: some colour maps ship as greyscale, which WebP export rejects.
         "color": tinted(color, f"{asset_id}_color"),
         "normal": _find(folder, "NormalGL"),
         "orm": orm_path,
         "alpha": _find(folder, "Opacity"),
     }
+    if size is None:
+        return maps
+    return {key: tinted(path, f"{asset_id}_{key}_{size}", size=size) for key, path in maps.items()}
 
 
 def tinted(source, name, multiply=(1.0, 1.0, 1.0), add=(0.0, 0.0, 0.0), contrast=1.0, size=None):

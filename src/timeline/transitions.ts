@@ -1,36 +1,59 @@
 import { smoothstep } from '@/lib/math';
-import { CHAPTERS, getChapter } from './chapters';
-import { resolve, wrapProgress } from './resolve';
+import { CHAPTERS, type ChapterId, LOOP_LENGTH_VH } from './chapters';
+import { wrapProgress } from './resolve';
 
 /** Tape glitch when the floor breaks: the biggest jolt of the story. */
 export const FLOOR_BREAK_SPIKE = 0.9;
+/** Tape glitch when the figure crashes into the booth: hard enough to hide it getting up. */
+export const LANDING_SPIKE = 0.6;
+/** Out of the booth window into the work the camera never cuts: barely a skip. */
+export const WINDOW_SPIKE = 0.05;
 /** Tape glitch for every other chapter change: a light skip, the glass does the rest. */
 export const BOUNDARY_SPIKE = 0.15;
 
-/**
- * VHS spike for a scroll step from `prevP` to `p`: a glitch whenever the step changes
- * chapter, strongest when it crosses into the fall. Loop wraps (jumps of more than
- * half a loop) are handled by the loop counter instead and give nothing here.
- */
-export function boundarySpike(prevP: number, p: number): number {
-  if (Math.abs(p - prevP) > 0.5) return 0;
-  if (resolve(prevP).chapter.id === resolve(p).chapter.id) return 0;
-  const fallStart = getChapter('fall').start;
-  return prevP < fallStart && p >= fallStart ? FLOOR_BREAK_SPIKE : BOUNDARY_SPIKE;
+/** The glitch for crossing into chapter `id` forward, or out of it backward. */
+function spikeFor(id: ChapterId, forward: boolean): number {
+  if (id === 'spiral') return WINDOW_SPIKE;
+  if (forward && id === 'fall') return FLOOR_BREAK_SPIKE;
+  if (forward && id === 'about') return LANDING_SPIKE;
+  return BOUNDARY_SPIKE;
 }
 
 /**
- * The glass between chapters, per chapter that starts there: how thick it gets on the
- * boundary and how far (in p) it reaches before and after it. The long descents get the thickest.
+ * VHS spike for a scroll step from `prevP` to `p`: the strongest glitch of the chapter
+ * changes it crosses, hardest where the floor breaks. Loop wraps (jumps of more than
+ * half a loop) are handled by the loop counter instead and give nothing here.
  */
-const PANES: Partial<Record<(typeof CHAPTERS)[number]['id'], { strength: number; before: number; after: number }>> = {
+export function boundarySpike(prevP: number, p: number): number {
+  if (Math.abs(p - prevP) > 0.5 || p === prevP) return 0;
+  const forward = p > prevP;
+  const [from, to] = forward ? [prevP, p] : [p, prevP];
+  let spike = 0;
+  for (const chapter of CHAPTERS.slice(1)) {
+    if (from < chapter.start && chapter.start <= to) spike = Math.max(spike, spikeFor(chapter.id, forward));
+  }
+  return spike;
+}
+
+/** One screen of scroll, in p. */
+const SCREEN = 100 / LOOP_LENGTH_VH;
+
+/**
+ * The glass between chapters, per chapter that starts there: how thick it gets on the
+ * boundary and how far (in screens of scroll) it reaches before and after it. The long
+ * descents get the thickest.
+ */
+const PANES: Partial<Record<ChapterId, { strength: number; before: number; after: number }>> = {
   // The floor giving way: the glass creeps in over the last of the room, then clears as the camera drops.
-  fall: { strength: 0.6, before: 0.03, after: 0.015 },
-  spiral: { strength: 1, before: 0.02, after: 0.02 },
-  problem: { strength: 1, before: 0.02, after: 0.02 },
-  stack: { strength: 0.55, before: 0.014, after: 0.014 },
-  contact: { strength: 0.55, before: 0.014, after: 0.014 },
-  loop: { strength: 0.7, before: 0.02, after: 0.02 },
+  fall: { strength: 0.6, before: 0.42, after: 0.21 },
+  // The crash through the booth roof: the glass hits at once and clears with the dust.
+  about: { strength: 0.75, before: 0.1, after: 0.34 },
+  // Out through the booth window the camera never cuts: the glass only brushes the picture.
+  spiral: { strength: 0.3, before: 0.2, after: 0.2 },
+  problem: { strength: 1, before: 0.28, after: 0.28 },
+  stack: { strength: 0.55, before: 0.2, after: 0.2 },
+  contact: { strength: 0.55, before: 0.2, after: 0.2 },
+  loop: { strength: 0.7, before: 0.28, after: 0.28 },
 };
 
 /**
@@ -44,7 +67,7 @@ export function glassAt(p: number): { amount: number; seed: number } {
     const pane = PANES[CHAPTERS[i].id];
     if (!pane) continue;
     const start = CHAPTERS[i].start;
-    const distance = Math.abs(x - start) / (x < start ? pane.before : pane.after);
+    const distance = Math.abs(x - start) / ((x < start ? pane.before : pane.after) * SCREEN);
     if (distance < 1) return { amount: pane.strength * (1 - smoothstep(0, 1, distance)), seed: i };
   }
   return { amount: 0, seed: 0 };

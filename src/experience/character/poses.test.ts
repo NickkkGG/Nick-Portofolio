@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getChapter } from '@/timeline/chapters';
-import { blendedOffset, CLIPS, type ClipMix, depthsMix, looping, roomMix, scrubbed, spiralMix, STEP_FORWARD } from './poses';
+import { BEAM_OUT_T } from '@/experience/chapters/booth/slides';
+import { blendedOffset, boothMix, CLIPS, type ClipMix, depthsMix, looping, roomMix, scrubbed, STEP_FORWARD } from './poses';
 
 const at = (id: Parameters<typeof getChapter>[0], t: number) => {
   const c = getChapter(id);
@@ -23,11 +24,6 @@ describe('the character poses', () => {
     expect(scrubbed('StandUp', 1.4).time).toBeLessThan(CLIPS.StandUp);
   });
 
-  it('stands on the pillar through the project world', () => {
-    expect(only(spiralMix(2))).toEqual(['Stand']);
-    expect(total(spiralMix(7.5))).toBeCloseTo(1, 9);
-  });
-
   it('sits hunched through the problems, gets up with the idea and stands for the tapes', () => {
     expect(only(depthsMix(at('problem', 0.5), 1))).toEqual(['SitHunched']);
     expect(only(depthsMix(at('stack', 0.25), 1))).toEqual(['StandUp']);
@@ -43,5 +39,25 @@ describe('the character poses', () => {
     expect(blendedOffset(before)[2]).toBeLessThan(blendedOffset(after)[2] + 1e-9);
     expect(blendedOffset(depthsMix(at('contact', 0.5), 1))).toEqual(STEP_FORWARD);
     expect(blendedOffset(depthsMix(at('problem', 0.5), 1))).toEqual([0, 0, 0]);
+  });
+
+  it('in the booth the figure sits hunched on its crate through the slides', () => {
+    for (const t of [0, 0.3, 0.8]) expect(only(boothMix(at('about', t), 1.2))).toEqual(['SitHunched']);
+  });
+
+  it('it gets up once the sheet is down, and ends a step forward at the window', () => {
+    const rising = boothMix(at('about', 0.915), 1.2);
+    expect(only(rising)).toContain('StandUp');
+    expect(total(rising)).toBeCloseTo(1);
+    const stood = boothMix(at('about', 0.99), 1.2);
+    expect(only(stood)).toEqual(['Stand']);
+    expect(blendedOffset(stood)).toEqual(STEP_FORWARD);
+    expect(only(boothMix(at('about', BEAM_OUT_T - 0.01), 1.2))).toEqual(['SitHunched']);
+  });
+
+  it('it keeps standing at the window while the camera tours the monitors', () => {
+    const work = boothMix(at('spiral', 0.1), 2);
+    expect(only(work)).toEqual(['Stand']);
+    expect(blendedOffset(work)).toEqual(STEP_FORWARD);
   });
 });

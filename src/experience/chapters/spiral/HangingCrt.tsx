@@ -36,6 +36,7 @@ uniform float uTime;
 uniform float uFocus;
 uniform float uSeed;
 uniform float uSurge;
+uniform float uPower;
 uniform float uEnvScale;
 uniform sampler2D uLabel;
 uniform sampler2D uEnv;
@@ -62,6 +63,8 @@ void main() {
   color = mix(color, vec3(0.25 + 0.9 * noise), uSurge);
   float tube = 1.0 - smoothstep(0.32, 0.72, length(c * vec2(1.0, 1.25)));
   color *= tube * mix(0.3, 2.0, max(uFocus, uSurge * 0.8)) * vec3(0.82, 0.95, 1.0);
+  // Switched off, the tube is dark glass: only the world mirrored in it.
+  color *= uPower;
 
   vec3 n = normalize(vWorldNormal);
   vec3 v = normalize(cameraPosition - vWorldPos);
@@ -120,6 +123,7 @@ class CrtRig {
           uFocus: { value: 0 },
           uSeed: { value: seed },
           uSurge: { value: 0 },
+          uPower: { value: 1 },
           uEnvScale: { value: envScale },
           uLabel: { value: null },
           uEnv: { value: null },
@@ -142,10 +146,11 @@ class CrtRig {
     this.label.needsUpdate = true;
   }
 
-  update(time: number, focus: number, surge: number) {
+  update(time: number, focus: number, surge: number, power: number) {
     this.screen.uniforms.uTime.value = time;
     this.screen.uniforms.uFocus.value = focus;
-    this.screen.uniforms.uSurge.value = surge;
+    this.screen.uniforms.uSurge.value = surge * power;
+    this.screen.uniforms.uPower.value = power;
   }
 
   dispose() {
@@ -168,12 +173,14 @@ export interface HangingCrtProps {
   channel: string;
   /** Screen brightness from the spiral chapter's local t: 0 dim, 1 focused. */
   focusAt: (t: number) => number;
+  /** Whether the set is on at global p, 0..1: the first one waits for the booth's beam. */
+  powerAt?: (p: number) => number;
   /** Main monitors mark the spot in front of the screen where their glow on the cables comes from. */
   glowRef?: Ref<Object3D>;
 }
 
 /** An old CRT hanging from its cable, showing NO SIGNAL static until a project tunes in. */
-export function HangingCrt({ template, env, envScale, smudge, position, angle, seed, title, channel, focusAt, glowRef }: HangingCrtProps) {
+export function HangingCrt({ template, env, envScale, smudge, position, angle, seed, title, channel, focusAt, powerAt, glowRef }: HangingCrtProps) {
   const pivot = useRef<Group>(null);
   const rig = useMemo(() => new CrtRig(template, seed, env, envScale, smudge), [template, seed, env, envScale, smudge]);
 
@@ -186,7 +193,7 @@ export function HangingCrt({ template, env, envScale, smudge, position, angle, s
   useFrame(() => {
     const { p, time } = useExperience.getState();
     const focus = focusAt(localProgress(p, 'spiral'));
-    rig.update(time, focus, surgeLevel(time));
+    rig.update(time, focus, surgeLevel(time), powerAt ? powerAt(p) : 1);
     const [x, z] = hangingSway(time, seed, CABLE);
     pivot.current?.rotation.set(x, angle, z);
   });

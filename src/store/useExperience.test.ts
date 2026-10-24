@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { ScrollApi } from '@/scroll/types';
 import { initialExperienceState, useExperience } from './useExperience';
+import { getChapter } from '@/timeline/chapters';
 import { BOUNDARY_SPIKE } from '@/timeline/transitions';
+
+const FALL = getChapter('fall').start;
+const IDEAS = getChapter('problem').start;
 
 const store = () => useExperience.getState();
 
@@ -57,12 +61,12 @@ describe('experience store', () => {
   });
 
   it('scrolling into the fall glitches the tape hard, other chapter changes a little', () => {
-    store().setScroll(0.099);
-    store().setScroll(0.101);
+    store().setScroll(FALL - 0.001);
+    store().setScroll(FALL + 0.001);
     expect(store().vhsSpike).toBe(0.9);
     useExperience.setState({ vhsSpike: 0 });
-    store().setScroll(0.259);
-    store().setScroll(0.261);
+    store().setScroll(IDEAS - 0.001);
+    store().setScroll(IDEAS + 0.001);
     expect(store().vhsSpike).toBe(BOUNDARY_SPIKE);
   });
 
@@ -111,16 +115,16 @@ describe('experience store', () => {
   it('once playing, scrolling logs the sounds of the story: the floor giving way, a jump switching channel', () => {
     store().play();
     store().tick(1);
-    store().setScroll(0.099);
-    store().setScroll(0.101);
+    store().setScroll(FALL - 0.001);
+    store().setScroll(FALL + 0.001);
     store().setScroll(0.5, { programmatic: true });
     expect(store().sounds.map((s) => s.name)).toEqual(['power-on', 'floor-break', 'channel']);
     expect(store().sounds[1].time).toBe(1);
   });
 
   it('nothing sounds before PLAY', () => {
-    store().setScroll(0.099);
-    store().setScroll(0.101);
+    store().setScroll(FALL - 0.001);
+    store().setScroll(FALL + 0.001);
     store().setScroll(0.5, { programmatic: true });
     expect(store().sounds).toEqual([]);
   });

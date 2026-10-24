@@ -1,4 +1,5 @@
 import type { Vec3 } from '@/experience/camera/types';
+import { standUp } from '@/experience/chapters/booth/slides';
 import { clamp01, smoothstep } from '@/lib/math';
 import { resolve } from '@/timeline/resolve';
 
@@ -50,16 +51,35 @@ export function fallMix(time: number): ClipMix[] {
   return [looping('Fall', time)];
 }
 
-/** Up on the pillar, among the monitors: the fall ends lying on it, behind the chapter's glass. */
-export function spiralMix(time: number): ClipMix[] {
-  return [looping('Stand', time)];
-}
 
 /** Stack-local t over which the character gets up off the dead TV, and how long the hand-overs take. */
 const RISE = { from: 0.05, to: 0.45 } as const;
 const HANDOVER = 0.06;
 /** Getting up ends a step forward: the standing clip plays from there. */
 export const STEP_FORWARD: Vec3 = [0, 0, 0.4];
+
+/** Out of a breathing sit, through getting up (`k` 0..1, as the scroll scrubs it), into standing a step forward. */
+function rising(k: number, time: number): ClipMix[] {
+  if (k <= 0) return [looping('SitHunched', time)];
+  // Out of the breathing loop into the rise, and out of the rise into standing, each eased.
+  const intoRise = smoothstep(0, HANDOVER, k);
+  const intoStand = smoothstep(1 - HANDOVER, 1, k);
+  return [
+    looping('SitHunched', time, 1 - intoRise),
+    scrubbed('StandUp', k, intoRise - intoStand),
+    looping('Stand', time, intoStand, STEP_FORWARD),
+  ].filter((m) => m.weight > 0);
+}
+
+/**
+ * In the booth: hunched on the crate through the slides, getting up once the sheet is down
+ * (booth/slides.ts), then standing at the window while the camera tours the monitors.
+ */
+export function boothMix(p: number, time: number): ClipMix[] {
+  const { chapter, t } = resolve(p);
+  if (chapter.id === 'spiral') return [looping('Stand', time, 1, STEP_FORWARD)];
+  return rising(standUp(t), time);
+}
 
 /**
  * Down in the depths (spec §3.7-3.9): hunched on the dead TV through the problems, getting
@@ -69,13 +89,5 @@ export function depthsMix(p: number, time: number): ClipMix[] {
   const { chapter, t } = resolve(p);
   if (chapter.id === 'contact' || chapter.id === 'loop') return [looping('Stand', time, 1, STEP_FORWARD)];
   if (chapter.id !== 'stack') return [looping('SitHunched', time)];
-  const k = clamp01((t - RISE.from) / (RISE.to - RISE.from));
-  // Out of the breathing loop into the rise, and out of the rise into standing, each eased.
-  const intoRise = smoothstep(0, HANDOVER, k);
-  const intoStand = smoothstep(1 - HANDOVER, 1, k);
-  return [
-    looping('SitHunched', time, 1 - intoRise),
-    scrubbed('StandUp', k, intoRise - intoStand),
-    looping('Stand', time, intoStand, STEP_FORWARD),
-  ].filter((m) => m.weight > 0);
+  return rising(clamp01((t - RISE.from) / (RISE.to - RISE.from)), time);
 }

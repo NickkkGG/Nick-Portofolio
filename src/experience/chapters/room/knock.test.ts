@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Vec3 } from '@/experience/camera/types';
+import { chapterP } from '@/timeline/resolve';
 import { DUST_COUNT } from './dust';
 import { canKnock, INITIAL_KNOCK, knock, knockTarget, type KnockState, KNUCKLES, knucklePoint, lampNervousness, roomT, tensionAt } from './knock';
 
@@ -68,8 +69,8 @@ describe('ghost knock tension', () => {
 describe('where and when a knock works', () => {
   it('only in the room, before the floor starts to give', () => {
     expect(canKnock(0)).toBe(true);
-    expect(canKnock(0.059)).toBe(true);
-    expect(canKnock(0.061)).toBe(false);
+    expect(canKnock(chapterP('room', 0.59))).toBe(true);
+    expect(canKnock(chapterP('room', 0.61))).toBe(false);
     expect(canKnock(0.3)).toBe(false);
     expect(canKnock(0.95)).toBe(false);
     // The end of the loop already shows the room again.
@@ -91,7 +92,7 @@ describe('where and when a knock works', () => {
 describe('room clock', () => {
   it('runs with the room chapter and is calm again when the loop lands back', () => {
     expect(roomT(0)).toBe(0);
-    expect(roomT(0.05)).toBeCloseTo(0.5);
+    expect(roomT(chapterP('room', 0.5))).toBeCloseTo(0.5);
     expect(roomT(0.11)).toBe(1);
     expect(roomT(0.95)).toBe(0);
     expect(roomT(0.9995)).toBe(0);

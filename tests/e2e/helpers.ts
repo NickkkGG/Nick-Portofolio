@@ -1,6 +1,9 @@
 import type { Locator, Page } from '@playwright/test';
 import type { ExperienceSnapshot } from '../../src/debug/testHook';
 
+/** Global progress at chapter-local t, so the specs follow the chapter table when it changes. */
+export { chapterP } from '../../src/timeline/resolve';
+
 /** Waits until the lazily loaded 3D scene exists and has rendered a few frames. */
 export async function waitForScene(page: Page): Promise<void> {
   await page.waitForFunction(() => {

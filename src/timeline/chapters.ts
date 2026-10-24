@@ -1,4 +1,4 @@
-export type ChapterId = 'room' | 'fall' | 'spiral' | 'problem' | 'stack' | 'contact' | 'loop';
+export type ChapterId = 'room' | 'fall' | 'about' | 'spiral' | 'problem' | 'stack' | 'contact' | 'loop';
 
 export interface Chapter {
   id: ChapterId;
@@ -6,21 +6,41 @@ export interface Chapter {
   label: string;
   start: number;
   end: number;
+  /** Chapter-local t where a jump to the chapter lands (the menu, Home); 0 for its start. */
+  entry: number;
 }
 
-/** One loop of the story, in global progress `p` (spec §3.1). Ranges are end-exclusive. */
-export const CHAPTERS: readonly Chapter[] = [
-  { id: 'room', code: 'CH-01', label: 'ROOM', start: 0, end: 0.1 },
-  { id: 'fall', code: 'CH-02', label: 'FALL', start: 0.1, end: 0.26 },
-  { id: 'spiral', code: 'CH-03', label: 'WORK', start: 0.26, end: 0.56 },
-  { id: 'problem', code: 'CH-04', label: 'ABOUT', start: 0.56, end: 0.72 },
-  { id: 'stack', code: 'CH-05', label: 'STACK', start: 0.72, end: 0.82 },
-  { id: 'contact', code: 'CH-06', label: 'CONTACT', start: 0.82, end: 0.92 },
-  { id: 'loop', code: 'CH-07', label: 'LOOP', start: 0.92, end: 1 },
+/** One loop of the story, chapter by chapter, with each chapter's length in screens of scroll. */
+const STORY: readonly (Omit<Chapter, 'start' | 'end' | 'entry'> & { screens: number; entry?: number })[] = [
+  { id: 'room', code: 'CH-01', label: 'ROOM', screens: 1.4 },
+  { id: 'fall', code: 'CH-02', label: 'FALL', screens: 1.7 },
+  // The booth: who the visitor just fell in with, one slide at a time. The menu lands on the
+  // first slide, already sharp, rather than in the dust of the crash (booth/slides.ts).
+  { id: 'about', code: 'CH-03', label: 'ABOUT', screens: 4, entry: 0.09 },
+  { id: 'spiral', code: 'CH-04', label: 'WORK', screens: 4.2 },
+  { id: 'problem', code: 'CH-05', label: 'IDEAS', screens: 2 },
+  { id: 'stack', code: 'CH-06', label: 'STACK', screens: 1.4 },
+  { id: 'contact', code: 'CH-07', label: 'CONTACT', screens: 1.4 },
+  { id: 'loop', code: 'CH-08', label: 'LOOP', screens: 0.9 },
 ];
 
-/** Scroll length of one loop, in viewport-height percent (14 screens). */
-export const LOOP_LENGTH_VH = 1400;
+const SCREENS = STORY.reduce((sum, chapter) => sum + chapter.screens, 0);
+
+/** Scroll length of one loop, in viewport-height percent (17 screens). */
+export const LOOP_LENGTH_VH = Math.round(SCREENS * 100);
+
+/** Where each chapter starts in global progress, each boundary computed once so neighbours share it exactly. */
+const BOUNDARIES = STORY.map((_, i) => STORY.slice(0, i).reduce((sum, chapter) => sum + chapter.screens, 0) / SCREENS);
+
+/** One loop of the story, in global progress `p` (spec §3.1). Ranges are end-exclusive. */
+export const CHAPTERS: readonly Chapter[] = STORY.map(({ id, code, label, entry = 0 }, i) => ({
+  id,
+  code,
+  label,
+  start: BOUNDARIES[i],
+  end: i + 1 < STORY.length ? BOUNDARIES[i + 1] : 1,
+  entry,
+}));
 
 export function getChapter(id: ChapterId): Chapter {
   const chapter = CHAPTERS.find((c) => c.id === id);

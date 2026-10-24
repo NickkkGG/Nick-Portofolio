@@ -1,3 +1,4 @@
+import { Booth } from './booth/Booth';
 import { Cassettes } from './contact/Cassettes';
 import { Depths } from './depths/Depths';
 import { Fall } from './fall/Fall';
@@ -12,6 +13,7 @@ export function Chapters() {
     <>
       <Room />
       <Fall />
+      <Booth />
       <Spiral />
       <Depths />
       <Problem />

@@ -26,10 +26,10 @@ const KINDS = {
   shade: { ...UASTC, isPerceptual: false, isSetKTX2SRGBTransferFunc: false },
 };
 
-/** Maps the web loads on their own rather than from a GLB: the room's lightmaps and the hanging CRT's AO. */
+/** Maps the web loads on their own rather than from a GLB: the room's lightmaps, the hanging CRT's and the booth's AO. */
 const LOOSE = [
   [/^room-lm-.+\.webp$/, 'light'],
-  [/^crt-ao\.webp$/, 'shade'],
+  [/^(crt|booth)-ao\.webp$/, 'shade'],
 ];
 
 const GLB_MAGIC = 0x46546c67;

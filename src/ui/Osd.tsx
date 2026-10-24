@@ -1,6 +1,7 @@
 'use client';
 
 import { content } from '@/content';
+import { slideNumber } from '@/experience/chapters/booth/slides';
 import { useExperience } from '@/store/useExperience';
 import { getChapter } from '@/timeline/chapters';
 import { displayState } from '@/timeline/loop';
@@ -8,6 +9,9 @@ import { DecodeText } from './DecodeText';
 import { MusicToggle } from './MusicToggle';
 import { Nav } from './Nav';
 import { formatTimecode } from './timecode';
+
+const SLIDES = content.about.slides.length;
+const pad = (n: number) => String(n).padStart(2, '0');
 
 /** Camcorder on-screen display (spec §3.12). */
 export function Osd() {
@@ -20,6 +24,8 @@ export function Osd() {
     return `${c.code} / ${c.label}`;
   });
   const loopIndex = useExperience((s) => s.loopIndex);
+  // In the booth, which slide is on the sheet, like a carousel's counter.
+  const slide = useExperience((s) => slideNumber(s.p, SLIDES));
   if (!started) return null;
 
   return (
@@ -43,6 +49,11 @@ export function Osd() {
         {loopIndex > 1 && (
           <span data-testid="osd-loop">
             <DecodeText text={`LOOP ${String(loopIndex).padStart(2, '0')}`} />
+          </span>
+        )}
+        {slide !== null && (
+          <span data-testid="slide-counter">
+            <DecodeText text={`SLIDE ${pad(slide)} / ${pad(SLIDES)}`} />
           </span>
         )}
         <span data-testid="osd-chapter">

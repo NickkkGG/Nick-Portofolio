@@ -1,7 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { freeze, jumpTo, openExperience, play } from './helpers';
+import { chapterP, freeze, jumpTo, openExperience, play } from './helpers';
 
-/** Screen spots at 1280 x 720: a keycap passing in front at p 0.77, the GITHUB tape (top right) at p 0.885, and empty dark. */
+/** Moments: a keycap passing in front halfway through the stack, the tapes up in the contact chapter. */
+const KEYCAPS = chapterP('stack', 0.5);
+const TAPES = chapterP('contact', 0.65);
+/** Screen spots at 1280 x 720 at those moments: the keycap, the GITHUB tape (top right), and empty dark. */
 const KEYCAP = { x: 770, y: 222 };
 const GITHUB_TAPE = { x: 875, y: 348 };
 const EMPTY = { x: 200, y: 140 };
@@ -14,7 +17,7 @@ test.describe('down in the depths', () => {
   });
 
   test('a keycap under the pointer can be pressed', async ({ page }) => {
-    await jumpTo(page, 0.77);
+    await jumpTo(page, KEYCAPS);
     const html = page.locator('html');
     await page.mouse.move(KEYCAP.x, KEYCAP.y);
     await expect(html).toHaveAttribute('data-cursor', 'pointer');
@@ -24,7 +27,7 @@ test.describe('down in the depths', () => {
 
   test('clicking a tape opens its link', async ({ page, context }) => {
     await context.route('https://github.com/**', (route) => route.fulfill({ body: 'tape' }));
-    await jumpTo(page, 0.885);
+    await jumpTo(page, TAPES);
     await page.mouse.move(GITHUB_TAPE.x, GITHUB_TAPE.y);
     await expect(page.locator('html')).toHaveAttribute('data-cursor', 'pointer');
     const opened = context.waitForEvent('page');
@@ -33,7 +36,7 @@ test.describe('down in the depths', () => {
   });
 
   test('a tape under the pointer slides out and names its address', async ({ page }) => {
-    await jumpTo(page, 0.885);
+    await jumpTo(page, TAPES);
     const hint = page.getByTestId('tape-hint');
     await expect(hint).toHaveText('▸ pick a tape · 4 on the shelf');
     await page.mouse.move(GITHUB_TAPE.x, GITHUB_TAPE.y);
@@ -43,7 +46,7 @@ test.describe('down in the depths', () => {
   });
 
   test('the keycaps are gone once the tapes are up', async ({ page }) => {
-    await jumpTo(page, 0.885);
+    await jumpTo(page, TAPES);
     await page.mouse.move(KEYCAP.x, KEYCAP.y);
     await expect(page.locator('html')).not.toHaveAttribute('data-cursor', 'pointer');
   });

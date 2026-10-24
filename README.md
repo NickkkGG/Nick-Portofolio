@@ -4,7 +4,7 @@ Portofolio 3D satu halaman yang digerakkan scroll. Masih terus dikembangkan, tap
 
 **https://nick-project-1.vercel.app**
 
-Pengunjung mengikuti seorang karakter yang jatuh dari kamarnya ke dunia di bawah lantai, melewati project, cerita, tools, dan kontak, lalu kembali ke kamar dalam loop tanpa ujung. Semuanya terlihat seperti rekaman kaset VHS lama. Paling enak dibuka di laptop atau PC, pakai headphone.
+Pengunjung mengikuti seorang karakter yang jatuh dari kamarnya ke dunia di bawah lantai. Ia mendarat di bilik proyektor yang memutar slide perkenalan, lalu melewati project, ide, tools, dan kontak, dan kembali ke kamar dalam loop tanpa ujung. Semuanya terlihat seperti rekaman kaset VHS lama. Paling enak dibuka di laptop atau PC, pakai headphone.
 
 Dibangun dengan Next.js, React Three Fiber, Three.js, dan efek postprocessing buatan sendiri. Semua aset 3D dibuat lewat script Python di Blender (lihat [`blender/README.md`](blender/README.md)).
 
@@ -28,7 +28,7 @@ Lalu buka http://localhost:3000.
 - **Scroll mouse atau trackpad:** maju dan mundur di cerita. Setelah bab kontak, cerita kembali ke ruangan, dan hitungan loop bertambah.
 - **Space / PageDown / panah bawah** untuk maju, **Shift+Space / PageUp / panah atas** untuk mundur.
 - **Home atau Cmd+↑** kembali ke awal ruangan.
-- **Menu WORK · ABOUT · CONTACT** melompat ke awal bab terkait.
+- **Menu ABOUT · WORK · CONTACT** melompat ke bab terkait. ABOUT langsung ke slide pertama.
 - **Klik kiri di dinding ruangan** (kursor berubah jadi kepalan tangan) untuk mengetuk. Ketukan hanya bisa di awal bab ruangan, sebelum lantainya mulai amblas.
 - **Arahkan kursor ke keycap** di bab Stack untuk menekannya, dan **ke kaset** di bab Contact untuk menariknya keluar. **Klik kaset** untuk membuka link-nya.
 
@@ -65,6 +65,12 @@ Alternatifnya: push repo ini ke GitHub, lalu import di https://vercel.com/new. S
 3. Taruh file medianya di `public/projects/nama-project/`.
 
 Kalau ada isian yang salah, `npm run build` akan gagal dengan pesan yang menyebutkan field-nya. Data lain (nama, about, stack, kontak) ada di `src/content/`.
+
+## Mengisi slide about
+
+Slide di bilik proyektor diambil dari `src/content/about.ts`: paling banyak 8 slide, judul paling panjang 32 karakter, isi paling panjang 140 karakter. Tulisan di dalam [kurung siku] adalah isian contoh yang belum diganti.
+
+Slide pertama memakai `public/models/portrait.webp`, potret karakter hasil render. Ganti file itu dengan fotomu (sebaiknya persegi) dan slide-nya ikut berganti.
 
 ## Struktur singkat
 

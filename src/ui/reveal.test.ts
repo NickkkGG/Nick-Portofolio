@@ -8,10 +8,11 @@ describe('reveal', () => {
     expect(revealFraction(0.8, TEXT_WINDOWS.roomIntro)).toBe(0);
   });
 
-  it('the about headline types in only after the bulb lights', () => {
-    expect(revealFraction(0.5, TEXT_WINDOWS.problemHeadline)).toBe(0);
-    expect(revealFraction(0.785, TEXT_WINDOWS.problemHeadline)).toBeCloseTo(0.5);
-    expect(revealFraction(0.9, TEXT_WINDOWS.problemHeadline)).toBe(1);
+  it('the IDEAS motto types in as the bulb lights, then stays up to the end of the chapter', () => {
+    expect(revealFraction(0.55, TEXT_WINDOWS.ideasMotto)).toBe(0);
+    expect(revealFraction(0.64, TEXT_WINDOWS.ideasMotto)).toBeCloseTo(0.5);
+    expect(revealFraction(0.7, TEXT_WINDOWS.ideasMotto)).toBe(1);
+    expect(revealFraction(0.94, TEXT_WINDOWS.ideasMotto)).toBe(1);
   });
 
   it('typedCount rounds and clamps', () => {

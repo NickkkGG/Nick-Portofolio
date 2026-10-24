@@ -4,7 +4,7 @@ import Lenis from 'lenis';
 import { useEffect } from 'react';
 import { useExperience } from '@/store/useExperience';
 import { LOOP_LENGTH_VH } from '@/timeline/chapters';
-import { chapterStartP, wrapProgress } from '@/timeline/resolve';
+import { chapterEntryP, wrapProgress } from '@/timeline/resolve';
 import type { ScrollApi } from './types';
 
 /**
@@ -60,7 +60,7 @@ export function ScrollDriver() {
       jumpTo,
       toChapter: (id) => {
         store().spikeVhs(0.8);
-        jumpTo(chapterStartP(id) + 0.002);
+        jumpTo(chapterEntryP(id));
       },
       raf: (time) => {
         driven = performance.now();
