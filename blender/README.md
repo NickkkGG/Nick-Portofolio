@@ -38,7 +38,6 @@ $B -b --factory-startup -P blender/scripts/spiral.py   # pilar kabel, pilar jauh
 $B -b --factory-startup -P blender/scripts/depths.py   # lantai banjir, bohlam, problem, keycap, kaset, reruntuhan
 $B -b --factory-startup -P blender/scripts/booth.py    # bilik proyektor di bab ABOUT, AO-nya di-bake, plus preview
 npm run textures                                       # lalu semua teksturnya jadi KTX2 (lihat di bawah)
-$B -b --factory-startup blender/source/character.blend -P blender/scripts/portrait.py   # potret untuk slide pertama
 ```
 
 | File | Isi |
@@ -47,7 +46,6 @@ $B -b --factory-startup blender/source/character.blend -P blender/scripts/portra
 | `public/models/spiral.glb` + `spiral-probe.webp` | Dunia project (dikompres Draco): 130 kabel basah yang terpilin, relik yang terjepit di dalamnya, sarang di atas, 9 pilar jauh, kabel menjuntai, dan 8 menara TV. Probe-nya panorama untuk pantulan |
 | `public/models/depths.glb` | Dasar: lantai, reruntuhan, TV tenggelam, bohlam (3×), 10 problem, 1 keycap, 1 kaset + sampulnya, 6 bongkahan lantai untuk adegan jatuh |
 | `public/models/booth.glb` + `booth-ao.ktx2` | Bilik proyektor dari papan yang tergantung di kabel, di seberang TV pertama: dinding, atap yang jebol, kasur di bawah lubangnya, peti tempat duduk, proyektor carousel di atas tumpukan kardus, kain di tali dengan jepitan, rak rol film, sarang laba-laba. Ukurannya dari `src/experience/chapters/booth/layout.ts`. AO di-bake 2K lalu disimpan 1K; tekstur 1K, karena kamera tidak pernah cukup dekat untuk melihat bedanya |
-| `public/models/portrait.webp` | Potret karakter (render Cycles dari `character.blend`) untuk slide pertama, sampai ada foto asli |
 | `blender/previews/booth.png` | Render preview Cycles dari kamera di dalam bilik |
 
 Decoder Draco di-host sendiri di `public/draco/` (disalin dari `three/examples/jsm/libs/draco/gltf/`).
@@ -110,7 +108,6 @@ Transcoder Basis di-host sendiri di `public/basis/` (disalin dari `three/example
 | `scripts/spiral.py` | Dunia project → `spiral.glb` |
 | `scripts/depths.py` | Dasar dan semua benda di bab Ideas, Stack, Contact → `depths.glb` |
 | `scripts/booth.py` | Bilik proyektor bab About → `booth.glb`, AO-nya (`booth-ao.webp`, lalu KTX2), preview |
-| `scripts/portrait.py` | Potret karakter dari `character.blend` → `portrait.webp` |
 | `scripts/fetch_character.py` | Python biasa: download MPFB dan MakeHuman system assets |
 | `scripts/character.py` | Karakter dari MakeHuman lewat MPFB, plus baju, headphone, dan pose → `character.glb` |
 | `scripts/character_preview.py` | Render tiap pose karakter → `blender/previews/character-*.png` |

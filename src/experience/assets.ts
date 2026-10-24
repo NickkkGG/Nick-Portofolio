@@ -31,7 +31,7 @@ export const CRT_AO = { ao: '/models/crt-ao.ktx2' } as const;
 /** The projection booth's baked AO, on its second UV set (blender/scripts/booth.py). */
 export const BOOTH_AO = { ao: '/models/booth-ao.ktx2' } as const;
 
-/** The figure's portrait on the first slide (blender/scripts/portrait.py), until there is a photo. */
+/** The owner's photo, square, mounted as a print on the first slide. */
 export const PORTRAIT = '/models/portrait.webp';
 
 const DRACO = '/draco/';

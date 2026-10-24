@@ -70,7 +70,7 @@ Kalau ada isian yang salah, `npm run build` akan gagal dengan pesan yang menyebu
 
 Slide di bilik proyektor diambil dari `src/content/about.ts`: paling banyak 8 slide, judul paling panjang 32 karakter, isi paling panjang 140 karakter. Tulisan di dalam [kurung siku] adalah isian contoh yang belum diganti.
 
-Slide pertama memakai `public/models/portrait.webp`, potret karakter hasil render. Ganti file itu dengan fotomu (sebaiknya persegi) dan slide-nya ikut berganti.
+Slide pertama memakai `public/models/portrait.webp`, foto persegi 640 px. Untuk menggantinya, timpa file itu dengan foto lain (sebaiknya persegi, tanpa metadata lokasi), dan slide-nya ikut berganti.
 
 ## Struktur singkat
 
