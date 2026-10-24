@@ -76,22 +76,23 @@ function hit(ctx: AudioContext, out: AudioNode, at: number, strength: number) {
   click.start(at);
 }
 
-let warmed = false;
+let warm: PannerNode | null = null;
 
 /**
  * Gets the knock ready at PLAY: the room's echo, and the browser's HRTF data, which it only
  * starts loading when the first spatial sound is made. Without this the first knock plays
  * while the data is still loading, and its first knuckle comes out at a third of its loudness.
+ * Safari keeps that data only while some HRTF panner is alive, and a knock after the last one
+ * is collected loads it again and loses its first knuckle: so the warm panner is kept for good.
  */
 export function prepareKnock(): void {
   try {
     const ctx = audio();
-    if (!ctx || warmed) return;
-    const warm = new PannerNode(ctx, { panningModel: 'HRTF' });
+    if (!ctx || warm) return;
+    warm = new PannerNode(ctx, { panningModel: 'HRTF' });
     const mute = ctx.createGain();
     mute.gain.value = 0;
     warm.connect(mute).connect(ctx.destination);
-    warmed = true;
   } catch {
     // No sound is better than a broken room.
   }

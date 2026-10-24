@@ -16,6 +16,14 @@ test('the very first knock is a full knock-knock, as loud as the knocks after it
   // The music off again, to hear the knocks alone.
   await page.getByRole('button', { name: 'Music' }).click();
   await page.waitForTimeout(2000);
+  // A visit collects garbage all along, and Safari drops its HRTF data with the last
+  // panner that holds it (knock.ts): have that happen before the knocks.
+  await page.evaluate(() => {
+    const junk: object[][] = [];
+    for (let i = 0; i < 40; i++) junk.push(new Array(1_000_000).fill({ i }));
+    return junk.length;
+  });
+  await page.waitForTimeout(400);
 
   const knockAt = async (sceneTime: number) => {
     await page.evaluate((time) => window.__experience!.setTime(time), sceneTime);
