@@ -4,6 +4,7 @@ import { LOOP_ARRIVE_T, LOOP_TELEPORT_T } from '@/timeline/loop';
 import { lampNervousness } from '@/experience/chapters/room/knock';
 import { flickerDips } from '@/experience/flicker';
 import { BEAM_OUT_T, PROJECTOR_ON_T, SHEET_DROP_T, SLIDES } from '@/experience/chapters/booth/slides';
+import { DUST } from '@/experience/chapters/fall/dust';
 import { type Ambient, ambientSounds, dripsBetween, glitchesBetween, scrollCues } from './cues';
 
 const at = (id: ChapterId, t: number) => {
@@ -17,6 +18,11 @@ const cues = (from: number, to: number, programmatic = false) => scrollCues(from
 describe('sounds the scroll sets off', () => {
   it('scrolling down out of the room breaks the floor into another world', () => {
     expect(cues(at('room', 0.95), at('fall', 0.02))).toEqual(['floor-break']);
+  });
+
+  it('near the end of the fall the figure crumbles to dust, scrolling on', () => {
+    expect(cues(at('fall', DUST.start - 0.005), at('fall', DUST.start + 0.005))).toEqual(['dust']);
+    expect(cues(at('fall', DUST.start + 0.005), at('fall', DUST.start - 0.005))).toEqual([]);
   });
 
   it('the fall ends crashing into the booth', () => {

@@ -1,5 +1,6 @@
 import { BEAM_OUT_T, PROJECTOR_ON_T, SHEET_DROP_T, slideAt } from '@/experience/chapters/booth/slides';
 import { bulbIntensity, dripRipples } from '@/experience/chapters/depths/choreography';
+import { DUST } from '@/experience/chapters/fall/dust';
 import { lampNervousness, roomT } from '@/experience/chapters/room/knock';
 import { focusedIndex } from '@/experience/chapters/spiral/helix';
 import { flickerDips } from '@/experience/flicker';
@@ -10,6 +11,7 @@ import { displayState, LOOP_TELEPORT_P } from '@/timeline/loop';
 export type Cue =
   | 'power-on'
   | 'floor-break'
+  | 'dust'
   | 'landing'
   | 'projector'
   | 'slide'
@@ -24,6 +26,8 @@ const within = (id: ChapterId, t: number) => {
   const chapter = getChapter(id);
   return chapter.start + (chapter.end - chapter.start) * t;
 };
+/** The falling figure starts to crumble to dust (fall/dust.ts). */
+const DUST_P = within('fall', DUST.start);
 /** The bulb catches as it starts to glow (choreography.ts lights it over problem t 0.6-0.8). */
 const BULB_P = within('problem', 0.62);
 /** The first tape is halfway up out of the water (cassettePose). */
@@ -63,6 +67,7 @@ export function scrollCues(prevP: number, p: number, programmatic: boolean, proj
     else if (forward && through('fall', 'about')) cues.push('landing');
     else if (!through('about', 'spiral') && !through('spiral', 'about')) cues.push('channel');
   }
+  if (passes(prevP, p, DUST_P)) cues.push('dust');
   if (passes(prevP, p, PROJECTOR_P)) cues.push('projector');
   // The carousel clicks once a step, either way, however many slides a fast scroll skips.
   if (!changed && after.chapterId === 'about' && slideAt(before.t, slides).index !== slideAt(after.t, slides).index) cues.push('slide');

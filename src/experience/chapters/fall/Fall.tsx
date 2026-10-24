@@ -1,3 +1,4 @@
+import { useThree } from '@react-three/fiber';
 import { useMemo, useRef } from 'react';
 import { AdditiveBlending, Group, type Material, Mesh, MeshStandardMaterial, type Object3D } from 'three';
 import { content } from '@/content';
@@ -11,6 +12,8 @@ import { smoothstep } from '@/lib/math';
 import { mulberry32 } from '@/lib/random';
 import { MODELS, useModel } from '@/experience/assets';
 import { useChapterFrame } from '../useChapterFrame';
+import { dustFront } from './dust';
+import { FigureDust } from './FigureDust';
 import { fallingFigure } from './figure';
 import { edgeGeometry, holeOutline, rebarGeometries, rimGeometry, slabMaterial, undersideGeometry } from './slab';
 
@@ -107,13 +110,13 @@ const HOLE_GLOW = {
 /**
  * Upright, leaning back with its arms up for the hole, its pelvis on the point the camera
  * looks at (figure.ts): coming through the hole above the camera, then falling beside it,
- * until it goes through the booth roof as the chapter ends. Shown from when the camera is
- * through the floor until then.
+ * until near the end it turns to dust (dust.ts). Shown from when the camera is through the
+ * floor until the last of it has gone.
  */
 function placeFalling(figure: Group) {
   const { p, time } = useExperience.getState();
   const { chapter, t } = resolve(p);
-  figure.visible = chapter.id === 'fall' && t >= 0.15;
+  figure.visible = chapter.id === 'fall' && t >= 0.15 && dustFront(t) < 1;
   const pose = cameraPoseAt(p, content.projects.length);
   const { position, rotation } = fallingFigure(pose.target, pose.position, time);
   figure.rotation.set(...rotation, 'YXZ');
@@ -125,8 +128,14 @@ export function Fall() {
   const ref = useRef<Group>(null);
   const { scene } = useModel(MODELS.depths);
   const kit = useMemo(() => new FallKit(scene), [scene]);
+  const dust = useMemo(() => new FigureDust(), []);
+  const gl = useThree((s) => s.gl);
+  const size = useThree((s) => s.size);
 
-  useChapterFrame('fall', ref, (t) => kit.update(t));
+  useChapterFrame('fall', ref, (t, p) => {
+    kit.update(t);
+    dust.update(t, resolve(p).chapter.id === 'fall', useExperience.getState().time, size.height * gl.getPixelRatio());
+  });
 
   return (
     <group ref={ref}>
@@ -150,7 +159,8 @@ export function Fall() {
         nearFade={[2, 12]}
       />
       <primitive object={kit.root} />
-      <Character pose={() => fallMix(useExperience.getState().time)} place={placeFalling} />
+      <primitive object={dust.root} />
+      <Character pose={() => fallMix(useExperience.getState().time)} place={placeFalling} dress={dust.dress} />
     </group>
   );
 }

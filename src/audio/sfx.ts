@@ -213,6 +213,23 @@ function landing(ctx: BaseAudioContext, { dry, wet }: Out, at: number) {
   }
 }
 
+/** The figure crumbling to dust: a dry rustle like ash poured from a hand, grains ticking off it, and the wind taking it. */
+function dust(ctx: BaseAudioContext, { dry, wet }: Out, at: number) {
+  noise(ctx, at, 2.4)
+    .connect(band(ctx, 3800, 0.8))
+    .connect(envelope(ctx, at, 0.06, 0.5, 1.8))
+    .connect(dry);
+  // Most grains come off in the middle of it.
+  for (let i = 0; i < 70; i++) {
+    const t = 1.8 * ((Math.random() + Math.random()) / 2);
+    burst(ctx, dry, at + t, rand(0.002, 0.007), rand(2500, 7000), 1.5, rand(0.015, 0.05));
+  }
+  noise(ctx, at + 0.2, 2.4)
+    .connect(band(ctx, 700, 0.6))
+    .connect(envelope(ctx, at + 0.2, 0.05, 0.8, 1.4))
+    .connect(wet);
+}
+
 /** The slide projector jolted on: its rocker switch, the fan motor spinning up to speed, the lamp catching with a tick. */
 function projector(ctx: BaseAudioContext, { dry }: Out, at: number) {
   burst(ctx, dry, at, 0.01, 2200, 2, 0.35);
@@ -448,6 +465,7 @@ function glitch(ctx: BaseAudioContext, { dry }: Out, at: number) {
 const VOICES: Record<Sfx, Voice> = {
   'power-on': powerOn,
   'floor-break': floorBreak,
+  dust,
   landing,
   projector,
   slide,
@@ -471,6 +489,7 @@ export const isSfx = (name: string): name is Sfx => Object.hasOwn(VOICES, name);
 const MIX: Record<Sfx, number> = {
   'power-on': 1.6,
   'floor-break': 1,
+  dust: 2.6,
   landing: 1,
   projector: 2.2,
   slide: 1.6,
@@ -495,6 +514,7 @@ const MIX: Record<Sfx, number> = {
 const SPACING: Record<Sfx, number> = {
   'power-on': 1,
   'floor-break': 1.5,
+  dust: 1.5,
   landing: 0.8,
   projector: 1.5,
   slide: 0.12,
