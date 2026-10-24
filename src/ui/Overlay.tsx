@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useRef } from 'react';
+import { SoundScape } from '@/audio/SoundScape';
 import { Soundtrack } from '@/audio/Soundtrack';
 import { useDebugMode } from '@/debug/useDebugMode';
 import { useExperience } from '@/store/useExperience';
@@ -33,6 +34,7 @@ export function Overlay() {
   return (
     <div ref={root} data-testid="overlay" className="pointer-events-none fixed inset-0 z-10">
       <Soundtrack />
+      <SoundScape />
       <ChapterTexts />
       <Osd />
       <Loader />

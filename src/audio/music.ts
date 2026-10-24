@@ -16,7 +16,8 @@ const CHORD = CHORD_EIGHTHS * EIGHTH;
 /** Notes are scheduled this far ahead of the audio clock (s); the scheduler wakes every TICK ms. */
 const AHEAD = 0.5;
 const TICK = 120;
-const VOLUME = 0.8;
+/** Low (-8 dB): the music sits under the sounds of the scene. */
+const VOLUME = 0.4;
 /** Seconds to fade in on PLAY, and out when switched off or the tab is hidden. */
 const FADE_IN = 5;
 const FADE_OUT = 0.8;

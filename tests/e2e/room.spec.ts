@@ -5,6 +5,9 @@ import { freeze, jumpTo, openExperience, play, state, waitFrames } from './helpe
 const WALL = { x: 880, y: 120 };
 const MONITOR = { x: 652, y: 362 };
 
+/** The knocks among the logged sounds (PLAY and the story log theirs too). */
+const knocks = <T extends { name: string }>(sounds: T[]) => sounds.filter((s) => s.name === 'knock');
+
 test.describe('room', () => {
   test.beforeEach(async ({ page }) => {
     await openExperience(page);
@@ -17,23 +20,24 @@ test.describe('room', () => {
     await page.mouse.click(WALL.x, WALL.y);
     await waitFrames(page, 2);
     const { sounds, tension } = await state(page);
-    expect(sounds.map((s) => s.name)).toEqual(['knock']);
+    const heard = knocks(sounds);
+    expect(heard).toHaveLength(1);
     // The back wall is the plane z = -1.18.
-    expect(sounds[0].position![2]).toBeCloseTo(-1.18, 2);
+    expect(heard[0].position![2]).toBeCloseTo(-1.18, 2);
     expect(tension).toBe(1);
   });
 
   test('clicking the monitor does not knock', async ({ page }) => {
     await page.mouse.click(MONITOR.x, MONITOR.y);
     await waitFrames(page, 2);
-    expect((await state(page)).sounds).toEqual([]);
+    expect(knocks((await state(page)).sounds)).toEqual([]);
   });
 
   test('the walls stop answering once the floor starts to give', async ({ page }) => {
     await jumpTo(page, 0.07);
     await page.mouse.click(WALL.x, WALL.y);
     await waitFrames(page, 2);
-    expect((await state(page)).sounds).toEqual([]);
+    expect(knocks((await state(page)).sounds)).toEqual([]);
   });
 
   test('the cursor turns into a fist over a wall only', async ({ page }) => {

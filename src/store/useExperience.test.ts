@@ -101,6 +101,30 @@ describe('experience store', () => {
     expect(store().sounds).toHaveLength(1);
   });
 
+  it('PLAY switches the set on with its sound', () => {
+    store().tick(2);
+    store().play();
+    store().play();
+    expect(store().sounds).toEqual([{ name: 'power-on', time: 2 }]);
+  });
+
+  it('once playing, scrolling logs the sounds of the story: the floor giving way, a jump switching channel', () => {
+    store().play();
+    store().tick(1);
+    store().setScroll(0.099);
+    store().setScroll(0.101);
+    store().setScroll(0.5, { programmatic: true });
+    expect(store().sounds.map((s) => s.name)).toEqual(['power-on', 'floor-break', 'channel']);
+    expect(store().sounds[1].time).toBe(1);
+  });
+
+  it('nothing sounds before PLAY', () => {
+    store().setScroll(0.099);
+    store().setScroll(0.101);
+    store().setScroll(0.5, { programmatic: true });
+    expect(store().sounds).toEqual([]);
+  });
+
   it('playing, scrolling and knocking all count as activity', () => {
     store().tick(2);
     store().play();

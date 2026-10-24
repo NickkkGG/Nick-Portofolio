@@ -33,6 +33,39 @@ html::-webkit-scrollbar {
     0 1px 2px rgb(0 0 0 / 0.9);
 }
 
+/* Text coming in off the tape (DecodeText): a character still in the noise keeps its place,
+   hidden, and its noise glyph is drawn over it, clipped to the character's own box, so the
+   words are in the page all along. The glyph splits red and blue like a misconverged tube. */
+.decode-char {
+  position: relative;
+}
+
+.decode-char[data-glyph] {
+  color: transparent;
+  text-shadow: none;
+}
+
+.decode-char[data-glyph]::after {
+  content: attr(data-glyph);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  line-height: normal;
+  text-align: center;
+  color: var(--color-screen);
+  text-shadow:
+    -1.5px 0 rgb(255 60 110 / 0.7),
+    1.5px 0 rgb(80 200 255 / 0.7),
+    0 0 8px rgb(0 0 0 / 0.9);
+}
+
+/* Screen readers skip the noise and read the character underneath. */
+@supports (content: "x" / "") {
+  .decode-char[data-glyph]::after {
+    content: attr(data-glyph) / "";
+  }
+}
+
 /* Over a wall in the room: knock. The hotspot sits on the knuckles. */
 html[data-cursor="knock"] canvas {
   cursor: url("/cursors/knock.svg") 16 12, pointer;

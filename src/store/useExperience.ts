@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
+import { scrollCues } from '@/audio/cues';
+import { content } from '@/content';
 import type { CameraPose, Vec3 } from '@/experience/camera/types';
 import { canKnock, INITIAL_KNOCK, knock, type KnockState } from '@/experience/chapters/room/knock';
 import type { ScrollApi } from '@/scroll/types';
@@ -53,6 +55,9 @@ export interface SoundEvent {
   position?: Vec3;
 }
 
+/** Kept short: tests read it, and SoundScape only plays what is new. */
+const logged = (sounds: SoundEvent[], more: SoundEvent[]) => (more.length === 0 ? sounds : [...sounds, ...more].slice(-32));
+
 export const initialExperienceState: Pick<
   ExperienceState,
   | 'started'
@@ -98,13 +103,15 @@ export const useExperience = create<ExperienceState>()(
     setSceneReady: () => set({ sceneReady: true, warmup: 1 }),
     setWarmup: (amount) => set({ warmup: Math.max(get().warmup, amount) }),
     play: () => {
-      if (get().started) return;
-      set({ started: true, vhsSpike: 1, lastActivity: get().time });
+      const { started, time, sounds } = get();
+      if (started) return;
+      set({ started: true, vhsSpike: 1, lastActivity: time, sounds: logged(sounds, [{ name: 'power-on', time }]) });
       get().scroll?.start();
     },
     setScroll: (p, opts) => {
-      const { p: prevP, loopIndex, vhsSpike } = get();
+      const { p: prevP, loopIndex, vhsSpike, started, time, sounds } = get();
       const next = wrapProgress(p);
+      const cues = started ? scrollCues(prevP, next, opts?.programmatic ?? false, content.projects.length) : [];
       const nextLoop = opts?.programmatic ? loopIndex : nextLoopIndex(prevP, next, loopIndex);
       // Jumps (nav, tests) cut cleanly; only the visitor's own scrolling chews the tape.
       const chapterSpike = opts?.programmatic ? 0 : boundarySpike(prevP, next);
@@ -113,7 +120,8 @@ export const useExperience = create<ExperienceState>()(
         p: next,
         loopIndex: nextLoop,
         vhsSpike: Math.max(vhsSpike, chapterSpike, loopSpike),
-        lastActivity: get().time,
+        lastActivity: time,
+        sounds: logged(sounds, cues.map((name) => ({ name, time }))),
       });
     },
     tick: (delta) => {
@@ -136,8 +144,7 @@ export const useExperience = create<ExperienceState>()(
       if (!result.accepted) return false;
       set({
         knock: result.state,
-        // Kept short: tests read it, nothing else needs history.
-        sounds: [...sounds, { name: 'knock', time, position }].slice(-32),
+        sounds: logged(sounds, [{ name: 'knock', time, position }]),
         lastActivity: time,
       });
       return true;

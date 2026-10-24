@@ -4,6 +4,7 @@ import { content } from '@/content';
 import { useExperience } from '@/store/useExperience';
 import { getChapter } from '@/timeline/chapters';
 import { displayState } from '@/timeline/loop';
+import { DecodeText } from './DecodeText';
 import { MusicToggle } from './MusicToggle';
 import { Nav } from './Nav';
 import { formatTimecode } from './timecode';
@@ -39,8 +40,14 @@ export function Osd() {
         {timecode}
       </div>
       <div data-overlay-item className="absolute bottom-5 right-6 flex flex-col items-end text-2xl tracking-widest">
-        {loopIndex > 1 && <span data-testid="osd-loop">LOOP {String(loopIndex).padStart(2, '0')}</span>}
-        <span data-testid="osd-chapter">{chapter}</span>
+        {loopIndex > 1 && (
+          <span data-testid="osd-loop">
+            <DecodeText text={`LOOP ${String(loopIndex).padStart(2, '0')}`} />
+          </span>
+        )}
+        <span data-testid="osd-chapter">
+          <DecodeText text={chapter} />
+        </span>
       </div>
     </div>
   );
