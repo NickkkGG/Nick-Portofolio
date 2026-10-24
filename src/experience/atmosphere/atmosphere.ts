@@ -31,7 +31,8 @@ const preset = (top: string, horizon: string, bottom: string, fog: string, fogDe
 /** Colours are sRGB; the scene converts them to linear. */
 export const ATMOSPHERES: Record<ChapterId, Atmosphere> = {
   room: preset('#1a2e3a', '#0d1a20', '#050708', '#0c1418', 0.008, 1.65),
-  fall: preset('#2a4452', '#0e1b21', '#030405', '#0a1317', 0.012, 1.35),
+  // Clear air all the way down, blue-grey even straight below, so the fall never drops into black.
+  fall: preset('#2e4c5b', '#17313b', '#0b181e', '#10222a', 0.012, 1.4),
   // The booth hangs in the same teal dark as the pillar, only dimmer: inside, the projector does the lighting.
   about: preset('#17403e', '#0a1f20', '#030707', '#0b2122', 0.012, 1.5),
   spiral: preset('#1d5a56', '#0d2b2c', '#030a0b', '#0f2f30', 0.016, 1.4),

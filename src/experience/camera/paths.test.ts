@@ -1,13 +1,25 @@
+import { PerspectiveCamera, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BOOTH } from '@/experience/chapters/booth/layout';
+import { BULB_Y, CASSETTE_HALF_HEIGHT, CASSETTE_REACH, CASSETTE_WIDTH, cassettePose } from '@/experience/chapters/depths/choreography';
 import { helixSlots, slotKeyframeT } from '@/experience/chapters/spiral/helix';
 import { getChapter } from '@/timeline/chapters';
 import { LOOP_TELEPORT_P } from '@/timeline/loop';
 import { chapterP } from '@/timeline/resolve';
 import { buildKeyframes, cameraPoseAt, focusDistance, monitorView } from './paths';
-import type { Vec3 } from './types';
+import type { CameraPose, Vec3 } from './types';
 
 const distance = (a: Vec3, b: Vec3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+
+/** Where `point` lands on a 16:9 screen seen from `pose` through the site's 50° lens, -1..1 each way. */
+function onScreen(pose: CameraPose, point: Vec3): [number, number] {
+  const camera = new PerspectiveCamera(50, 16 / 9, 0.05, 400);
+  camera.position.set(...pose.position);
+  camera.lookAt(...pose.target);
+  camera.updateMatrixWorld();
+  const v = new Vector3(...point).project(camera);
+  return [v.x, v.y];
+}
 const LANDING_P = getChapter('about').start;
 const insideBooth = ([x, y, z]: Vec3) =>
   Math.abs(x) < BOOTH.halfWidth && y > BOOTH.floorY && y < BOOTH.ceilingY && z > BOOTH.frontZ && z < BOOTH.backZ;
@@ -45,6 +57,46 @@ describe('camera paths', () => {
         expect(distance(before.position, after.position), `count=${count} p=${p}`).toBeLessThan(1e-3);
         expect(distance(before.target, after.target), `count=${count} p=${p}`).toBeLessThan(1e-3);
       }
+    }
+  });
+
+  it('through the fall the camera drops alongside the figure, a little below it, looking at it from the side', () => {
+    for (const t of [0.4, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9]) {
+      const { position, target } = cameraPoseAt(chapterP('fall', t), 6);
+      const across = Math.hypot(target[0] - position[0], target[2] - position[2]);
+      const up = (Math.atan2(target[1] - position[1], across) * 180) / Math.PI;
+      expect(across, `t=${t}`).toBeGreaterThan(2);
+      expect(across, `t=${t}`).toBeLessThan(4.5);
+      expect(up, `t=${t}`).toBeGreaterThan(0);
+      expect(up, `t=${t}`).toBeLessThan(30);
+    }
+  });
+
+  it('in the contact chapter the camera comes in close: the tapes fill most of the frame, all in it, clear of the title', () => {
+    for (const t of [0.5, 0.65, 0.9]) {
+      const pose = cameraPoseAt(chapterP('contact', t), 6);
+      const sleeves: [number, number][] = [];
+      const reach: [number, number][] = [];
+      for (let i = 0; i < 4; i++) {
+        const { position, side } = cassettePose(i, 4, t, 0, 'wings');
+        const [x, y, z] = position;
+        for (const dy of [-CASSETTE_HALF_HEIGHT, CASSETTE_HALF_HEIGHT]) {
+          for (const dx of [-CASSETTE_WIDTH / 2, CASSETTE_WIDTH / 2]) sleeves.push(onScreen(pose, [x + dx, y + dy, z]));
+          // The tape slid out of its sleeve on hover.
+          reach.push(onScreen(pose, [x + side * (CASSETTE_WIDTH / 2 + CASSETTE_REACH), y + dy, z]));
+        }
+      }
+      const xs = sleeves.map(([x]) => x);
+      const ys = sleeves.map(([, y]) => y);
+      expect(Math.max(...reach.map(([x]) => Math.abs(x))), `t=${t}`).toBeLessThan(0.97);
+      expect(Math.min(...ys), `t=${t}`).toBeGreaterThan(-0.9);
+      // The chapter's title and the tape hint sit across the top of the screen.
+      expect(Math.max(...ys), `t=${t}`).toBeLessThan(0.62);
+      // Over 60% of the width: close enough to read the stickers.
+      expect(Math.max(...xs) - Math.min(...xs), `t=${t}`).toBeGreaterThan(1.2);
+      // The bulb hangs under the tape hint, whose line runs at about 0.55: its glow never sits on
+      // the words, the handheld sway and the swing of its wire included.
+      expect(onScreen(pose, [0, BULB_Y, 0])[1], `t=${t}`).toBeLessThan(0.37);
     }
   });
 
@@ -86,8 +138,8 @@ describe('camera paths', () => {
 
   it('the camera glides through the keyframes it passes instead of stopping at each one', () => {
     const speed = (p: number) => distance(cameraPoseAt(p + 1e-4, 6).position, cameraPoseAt(p - 1e-4, 6).position) / 2e-4;
-    // The fall: room floor, -4, -30, -70 m, all one way down.
-    for (const t of [0.1875, 0.6875]) expect(speed(chapterP('fall', t)), `t=${t}`).toBeGreaterThan(150);
+    // The fall: from the room floor past -4, -11, -34, -58 and -72 m, all one way down.
+    for (const t of [0.1875, 0.36, 0.6, 0.82, 0.93]) expect(speed(chapterP('fall', t)), `t=${t}`).toBeGreaterThan(150);
     // Into the stack chapter the camera keeps creeping toward the bulb.
     expect(speed(chapterP('stack', 0))).toBeGreaterThan(5);
   });

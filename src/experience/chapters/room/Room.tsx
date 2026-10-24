@@ -6,11 +6,13 @@ import {
   Color,
   DoubleSide,
   EquirectangularReflectionMapping,
+  FrontSide,
   type Group,
   type Material,
   type Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  type Object3D,
   type PointLight,
   type RectAreaLight,
   SRGBColorSpace,
@@ -19,8 +21,10 @@ import {
 } from 'three';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 import { playKnock, prepareKnock } from '@/audio/knock';
+import { content } from '@/content';
 import { MODELS, ROOM_LIGHTMAPS, useKtx2, useModel } from '@/experience/assets';
 import { LightShaft } from '@/experience/atmosphere/LightShaft';
+import { cameraPoseAt } from '@/experience/camera/paths';
 import type { Vec3 } from '@/experience/camera/types';
 import { Character } from '@/experience/character/Character';
 import { glanceAt } from '@/experience/character/glance';
@@ -88,6 +92,14 @@ function screenPower(time: number): number {
   return 0.93 + 0.05 * Math.sin(time * 1.7) * Math.sin(time * 0.53) + 0.02 * Math.sin(time * 7.1);
 }
 
+/** Once the camera has dropped through the floor, the chair, the figure on it and the rug under it have gone through it too. */
+function fallenThrough(): boolean {
+  return cameraPoseAt(useExperience.getState().p, content.projects.length).position[1] < 0;
+}
+
+/** What stood over the hole, in room.glb: the chair's parts and the rug. */
+const OVER_THE_HOLE = ['Chair_Base', 'Chair_Lift', 'Chair_Seat', 'Chair_Piping', 'Rug'];
+
 function lampNow(): number {
   const { p, time, knock } = useExperience.getState();
   return lampLevel(time, { nervous: lampNervousness(roomT(p)), knocks: knock.knocks });
@@ -124,6 +136,7 @@ class RoomDressing {
   screen: Mesh | null = null;
   private readonly bulb = new MeshStandardMaterial({ color: '#2a2016', emissive: LAMP_COLOR, emissiveIntensity: 3, roughness: 0.15, transparent: true, opacity: 0.9 });
   private readonly filament = new MeshBasicMaterial({ color: new Color(LAMP_COLOR).multiplyScalar(30), toneMapped: false });
+  private readonly overTheHole: Object3D[];
 
   constructor(scene: Group, textures: Record<MapKey, Texture>, scales: Scales) {
     for (const key of ['aBase', 'aLamp', 'aScreen', 'bBase', 'bLamp', 'bScreen'] as const) {
@@ -150,6 +163,7 @@ class RoomDressing {
       envMap: probe,
       envMapIntensity: scales.probe * 1.5,
     });
+    this.overTheHole = OVER_THE_HOLE.map((name) => scene.getObjectByName(name)).filter((part) => part !== undefined);
     const cache = new Map<string, Material>();
     scene.traverse((object) => {
       const mesh = object as Mesh;
@@ -176,6 +190,9 @@ class RoomDressing {
       if (!baked) {
         const sway: Sway = runtime === 'cobweb' ? (source.name === 'Cobweb0' ? 'triangle' : 'quad') : 'none';
         const standard = bakeLighting(source as MeshStandardMaterial, maps[atlas], sway);
+        // Seen from below, as the camera drops out of the room, the floor is the slab under it
+        // (fall/slab.ts), broken open where the figure went through.
+        if (source.name === 'Floor') standard.side = FrontSide;
         standard.envMap = probe;
         standard.envMapIntensity = scales.probe * LOOK.reflections;
         if (runtime === 'decal' || runtime === 'cobweb') {
@@ -192,10 +209,11 @@ class RoomDressing {
     });
   }
 
-  /** The bare bulb glows with the lamp's flicker. */
-  update(level: number) {
+  /** The bare bulb glows with the lamp's flicker; what stood over the hole is gone once the camera is through the floor. */
+  update(level: number, fallen: boolean) {
     this.bulb.emissiveIntensity = 0.4 + 5 * level;
     this.filament.color.copy(LAMP_COLOR).multiplyScalar(2 + 40 * level * level);
+    for (const part of this.overTheHole) part.visible = !fallen;
   }
 }
 
@@ -242,7 +260,7 @@ export function Room() {
     roomLight.uBaseColor.value.setScalar(moonLevel(time) * LOOK.moon.gain);
     roomLight.uAmbient.value.setScalar(LOOK.ambient);
     roomLight.uTime.value = time;
-    dressing.update(level);
+    dressing.update(level, fallenThrough());
     if (lampLight.current) lampLight.current.intensity = LOOK.lamp.highlight * level;
     if (screenLight.current) screenLight.current.intensity = LOOK.screen.highlight * power;
   });
@@ -300,6 +318,9 @@ export function Room() {
         position={[0, 0, 0.03]}
         rotation={[0, Math.PI, 0]}
         pose={() => roomMix(useExperience.getState().time)}
+        place={(figure) => {
+          figure.visible = !fallenThrough();
+        }}
         look={() => {
           const { knock, time } = useExperience.getState();
           return glanceAt(knock.heard, time);

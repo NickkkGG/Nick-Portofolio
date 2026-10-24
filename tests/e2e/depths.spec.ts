@@ -6,7 +6,7 @@ const KEYCAPS = chapterP('stack', 0.5);
 const TAPES = chapterP('contact', 0.65);
 /** Screen spots at 1280 x 720 at those moments: the keycap, the GITHUB tape (top right), and empty dark. */
 const KEYCAP = { x: 770, y: 222 };
-const GITHUB_TAPE = { x: 875, y: 348 };
+const GITHUB_TAPE = { x: 978, y: 384 };
 const EMPTY = { x: 200, y: 140 };
 
 test.describe('down in the depths', () => {

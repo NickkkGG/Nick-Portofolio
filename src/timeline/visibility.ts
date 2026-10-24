@@ -19,11 +19,9 @@ const RANGES: Record<VisibilityGroup, readonly Range[]> = {
   fall: [around('fall')],
   // The booth comes up under the end of the fall and stays until the camera is past the first monitor.
   about: [[chapterP('fall', 0.75), chapterP('spiral', 0.15), true]],
-  // The pillar: below the end of the fall, then hidden behind the booth walls and the sheet until it drops.
-  spiral: [
-    [chapterP('fall', 0.75), chapterP('about', 0.15), true],
-    [chapterP('about', 0.75), getChapter('spiral').end + MARGIN, true],
-  ],
+  // The pillar: kept out of the fall, which drops through clear air, and hidden behind the
+  // booth walls and the sheet until it drops; then it is there through the window.
+  spiral: [[chapterP('about', 0.75), getChapter('spiral').end + MARGIN, true]],
   problem: [around('problem')],
   stack: [around('stack')],
   contact: [around('contact')],

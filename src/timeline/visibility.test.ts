@@ -26,8 +26,9 @@ describe('visibility', () => {
     expect(isVisible('about', chapterP('spiral', 0.5))).toBe(false);
   });
 
-  it('the pillar shows below the fall and through the booth window, not behind the sheet', () => {
-    expect(isVisible('spiral', chapterP('fall', 0.9))).toBe(true);
+  it('the pillar stays out of the fall and the booth, and shows through the window once the sheet is down', () => {
+    for (const t of [0.5, 0.8, 0.9, 0.99]) expect(isVisible('spiral', chapterP('fall', t)), `fall t=${t}`).toBe(false);
+    expect(isVisible('spiral', chapterP('about', 0.05))).toBe(false);
     expect(isVisible('spiral', chapterP('about', 0.5))).toBe(false);
     expect(isVisible('spiral', chapterP('about', 0.9))).toBe(true);
     expect(isVisible('spiral', chapterP('spiral', 0.5))).toBe(true);

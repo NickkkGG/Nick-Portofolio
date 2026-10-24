@@ -23,10 +23,11 @@ const FIELDS: (ParticleFieldProps & { name: string })[] = [
   {
     name: 'fall-rush',
     group: 'fall',
-    count: 2500,
+    count: 4800,
     seed: 12,
-    min: [-6, -70, -6],
-    max: [6, 2, 6],
+    // Along the whole drop, which drifts over to the booth: down to just above its roof.
+    min: [-5, -82, -5],
+    max: [5, 2, 19],
     color: '#bcd8e6',
     size: 0.018,
     drift: [0, 2.5, 0],

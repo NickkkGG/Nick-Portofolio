@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { AdditiveBlending, Group, type Object3D, Vector3 } from 'three';
+import { AdditiveBlending, Group, type Material, Mesh, MeshStandardMaterial, type Object3D } from 'three';
 import { content } from '@/content';
 import { LightShaft } from '@/experience/atmosphere/LightShaft';
 import { cameraPoseAt } from '@/experience/camera/paths';
@@ -11,27 +11,51 @@ import { smoothstep } from '@/lib/math';
 import { mulberry32 } from '@/lib/random';
 import { MODELS, useModel } from '@/experience/assets';
 import { useChapterFrame } from '../useChapterFrame';
+import { fallingFigure } from './figure';
+import { edgeGeometry, holeOutline, rebarGeometries, rimGeometry, slabMaterial, undersideGeometry } from './slab';
 
 /** depths.glb has six broken pieces of the room's floor slab, Fall_Chunk_0..5. */
 const SHAPES = 6;
+// A handful of small pieces, so they read as the floor coming apart around the figure
+// rather than a wall of slabs between it and the camera. They start under the slab, round
+// where the camera drops through after the figure but never in its face.
 const DEBRIS = (() => {
   const rand = mulberry32(7);
-  return Array.from({ length: 40 }, (_, i) => ({
-    x: rand() * 4 - 2,
-    z: rand() * 4 - 2,
-    y0: -rand(),
-    scale: 0.35 + rand() * 0.6,
-    spin: 0.5 + rand() * 2,
-    shape: i % SHAPES,
-  }));
+  return Array.from({ length: 16 }, (_, i) => {
+    const a = rand() * Math.PI * 2;
+    const r = 0.7 + rand() * 0.9;
+    return {
+      x: 0.32 + r * Math.cos(a),
+      z: 0.57 + r * Math.sin(a),
+      y0: -0.25 - rand() * 0.75,
+      scale: 0.2 + rand() * 0.35,
+      spin: 0.5 + rand() * 2,
+      shape: i % SHAPES,
+    };
+  });
 })();
 
-/** The broken floor: copies of the slab pieces, each tumbling down its own way. */
+function materialNamed(scene: Group, name: string): Material {
+  let found: Material | undefined;
+  scene.traverse((object) => {
+    const material = (object as Mesh).material;
+    if (!found && material && !Array.isArray(material) && material.name === name) found = material;
+  });
+  return found ?? new MeshStandardMaterial();
+}
+
+/** The broken floor: the slab it broke out of, and copies of its pieces, each tumbling down its own way. */
 class FallKit {
   readonly root = new Group();
   private readonly pieces: Object3D[] = [];
 
   constructor(scene: Group) {
+    const outline = holeOutline();
+    const face = slabMaterial(materialNamed(scene, 'Concrete') as MeshStandardMaterial);
+    const broken = slabMaterial(materialNamed(scene, 'ConcreteInner') as MeshStandardMaterial);
+    const rebar = materialNamed(scene, 'Rebar');
+    this.root.add(new Mesh(undersideGeometry(outline), face), new Mesh(rimGeometry(outline), broken), new Mesh(edgeGeometry(), broken));
+    for (const bar of rebarGeometries(outline)) this.root.add(new Mesh(bar, rebar));
     for (const d of DEBRIS) {
       const piece = scene.getObjectByName(`Fall_Chunk_${d.shape}`)?.clone() ?? new Group();
       piece.scale.setScalar(d.scale);
@@ -80,25 +104,20 @@ const HOLE_GLOW = {
   blending: AdditiveBlending,
 };
 
-/** The character's pelvis above its feet at rest (the model's origin is between the feet). */
-const PELVIS = new Vector3(0, 0.86, 0);
-/** Lying on its back, the pelvis this far above what it lies on. */
-const BACK = 0.12;
-const pelvis = new Vector3();
-
 /**
- * On its back, reaching for the hole, tumbling slowly, its pelvis on the point the camera
- * looks at: first above the falling camera, then below it, until it lands on the pillar
- * as the chapter ends. Shown from when the camera is through the floor until then.
+ * Upright, leaning back with its arms up for the hole, its pelvis on the point the camera
+ * looks at (figure.ts): coming through the hole above the camera, then falling beside it,
+ * until it goes through the booth roof as the chapter ends. Shown from when the camera is
+ * through the floor until then.
  */
 function placeFalling(figure: Group) {
   const { p, time } = useExperience.getState();
   const { chapter, t } = resolve(p);
   figure.visible = chapter.id === 'fall' && t >= 0.15;
-  const [x, y, z] = cameraPoseAt(p, content.projects.length).target;
-  figure.rotation.set(-Math.PI / 2, 0.25 * time, 0, 'YXZ');
-  pelvis.copy(PELVIS).applyEuler(figure.rotation);
-  figure.position.set(x - pelvis.x, y + BACK - pelvis.y, z - pelvis.z);
+  const pose = cameraPoseAt(p, content.projects.length);
+  const { position, rotation } = fallingFigure(pose.target, pose.position, time);
+  figure.rotation.set(...rotation, 'YXZ');
+  figure.position.set(...position);
 }
 
 /** The fall (spec §3.5): through the broken floor, the room's lamp glowing in the hole above, slab pieces raining down. */
@@ -118,7 +137,7 @@ export function Fall() {
       </mesh>
       <pointLight position={[0, 0.5, 0]} color="#cfe8ff" intensity={3} distance={80} decay={0} />
       {/* The undersides the camera sees catch the teal glow of the world below. */}
-      <hemisphereLight args={['#9fc4d8', '#3d6e70', 1.6]} />
+      <hemisphereLight args={['#9fc4d8', '#5b8e92', 1.6]} />
       <LightShaft
         group="fall"
         from={[0, -0.05, 0]}

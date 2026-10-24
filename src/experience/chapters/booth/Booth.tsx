@@ -86,6 +86,7 @@ class BoothKit {
   private readonly hanging = new Group();
   private readonly parts: Object3D[] = [];
   private readonly ropeEnds: Object3D | undefined;
+  private readonly cables: Object3D | undefined;
   /** The lit sheet as a light: a wide, soft cone back into the booth (an area light would cost every material in the film). */
   private readonly bounce = new SpotLight('#ffffff', 0, 6, 1.4, 0.5, 1.5);
   private readonly leak = new PointLight('#ffffff', 0, 2.5, 2);
@@ -159,6 +160,7 @@ class BoothKit {
       if (part) this.parts.push(part);
     }
     this.ropeEnds = scene.getObjectByName('Booth_RopeEnds');
+    this.cables = scene.getObjectByName('Booth_Cables');
 
     this.bounce.position.set(SHEET.x, SHEET.y, SHEET.z + 0.08);
     this.bounce.target.position.set(SHEET.x, BOOTH.floorY + 0.6, BOOTH.backZ);
@@ -187,8 +189,8 @@ class BoothKit {
     for (const part of this.parts) this.hanging.attach(part);
   }
 
-  /** About-chapter t (0 in the fall, 1 in the work), the scene clock, and where the camera is. */
-  update(t: number, time: number, eye: Vector3) {
+  /** About-chapter t (0 in the fall, 1 in the work), the scene clock, where the camera is, and whether it is still falling. */
+  update(t: number, time: number, eye: Vector3, falling: boolean) {
     const { index, local } = slideAt(t, SLIDES.length);
     const through = this.reel.show(index);
     const turning = index >= 0;
@@ -221,6 +223,9 @@ class BoothKit {
     this.hanging.position.y = SHEET_TOP - (left + right) / 2;
     this.hanging.rotation.z = Math.atan2(left - right, BOOTH.sheet.width);
     if (this.ropeEnds) this.ropeEnds.visible = t >= SHEET_DROP_T;
+    // The cables the shed hangs in run 45 m up, right where the end of the fall drops: left out
+    // of it so the figure falls through clear air, and back once it is inside, behind the walls.
+    if (this.cables) this.cables.visible = !falling;
 
     this.bounce.color.copy(this.lamp);
     this.bounce.intensity = LOOK.bounce * level * (LOOK.bounceFloor + through) * (1 - drop);
@@ -269,7 +274,7 @@ export function Booth() {
     return () => kit.dispose();
   }, [kit]);
 
-  useChapterFrame('about', ref, (t) => kit.update(t, useExperience.getState().time, camera.position));
+  useChapterFrame('about', ref, (t, p) => kit.update(t, useExperience.getState().time, camera.position, resolve(p).chapter.id === 'fall'));
 
   return (
     <group ref={ref}>

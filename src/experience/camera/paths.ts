@@ -26,10 +26,17 @@ const BEFORE_SPIRAL: CameraKeyframe[] = [
   { p: 0, ...ROOM_START },
   { p: at('room', 0.9), position: [0.75, 1.45, 1.35], target: [0, 0.9, -0.9] },
   { p: at('fall', 0), position: [0.4, 1.3, 0.8], target: [0, 0.2, -0.4] },
+  // Under the floor, looking up at the figure coming through the hole.
   { p: at('fall', 0.1875), position: [0.3, -4, 0.5], target: [0, 2, 0] },
-  { p: at('fall', 0.6875), position: [0.2, -30, 0.4], target: [0, -22, 0] },
-  // Drifting over the booth hanging in the dark, down onto the patch of roof the figure is about to go through.
-  { p: at('fall', 0.97), position: [2.4, -70, 16], target: BOOTH.roofHole },
+  // Then dropping alongside it, a little below, so it falls upright against the light above
+  // while the two drift over toward the booth.
+  { p: at('fall', 0.36), position: [1.9, -10.75, 2.35], target: [0, -10, 0.8] },
+  { p: at('fall', 0.6), position: [1.75, -33.75, 6.7], target: [-0.3, -33, 5] },
+  { p: at('fall', 0.82), position: [1.1, -58.5, 12.55], target: [-0.8, -58, 10.6] },
+  { p: at('fall', 0.93), position: [0.9, -72.3, 15.2], target: [-1, -72, 13.2] },
+  // Only then, under the glass, rising over it to look past it down onto the patch of roof it
+  // is about to go through.
+  { p: at('fall', 0.97), position: [0.8, -75.6, 15.6], target: [-1.05, -78.5, 13.6] },
   { p: at('fall', 1), position: [0.6, -79.6, 14.6], target: BOOTH.roofHole },
   // The crash: both keyframes share p and the later one wins, so the picture cuts inside under the glitch.
   { p: at('about', 0), ...BOOTH_VIEW },
@@ -48,10 +55,10 @@ const AFTER_SPIRAL: CameraKeyframe[] = [
   { p: at('stack', 0), position: [0, -178, 4], target: [0, -178, 0] },
   { p: at('contact', 0), position: [3, -177, 3], target: [0, -177.5, 0] },
   // Contact: round to the front while the tapes rise, so they are never seen piled up
-  // edge-on, then easing in, focused on them rather than on the bulb.
-  // Looking almost level, so the bulb hangs below the tagline instead of behind it.
-  { p: at('contact', 0.3), position: [0.25, -178.2, 6.5], target: [0, -178.5, 2.9] },
-  { p: at('loop', 0), position: [0, -178.3, 6], target: [0, -178.45, 2.9] },
+  // edge-on, then easing in close, focused on them rather than on the bulb, the stickers
+  // big enough to read and the tagline clear above them, the bulb hanging below its words.
+  { p: at('contact', 0.3), position: [0.15, -178.27, 5.25], target: [0, -178.33, 2.9] },
+  { p: at('loop', 0), position: [0, -178.32, 5.15], target: [0, -178.28, 2.9] },
   // Teleport: both keyframes share p; the later one wins from LOOP_TELEPORT_P onwards.
   { p: LOOP_TELEPORT_P, position: [0, -215, 7], target: [0, -230, 0] },
   { p: LOOP_TELEPORT_P, position: [1.6, 30, 2.6], target: [-0.25, 0, -1] },
