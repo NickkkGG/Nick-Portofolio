@@ -51,12 +51,18 @@ const BEFORE_SPIRAL: CameraKeyframe[] = [
 ];
 
 const AFTER_SPIRAL: CameraKeyframe[] = [
-  { p: at('problem', 0.25), position: [0, -177, 7], target: [0, -179.5, 0] },
-  { p: at('stack', 0), position: [0, -178, 4], target: [0, -178, 0] },
-  { p: at('contact', 0), position: [3, -177, 3], target: [0, -177.5, 0] },
-  // Contact: round to the front while the tapes rise, so they are never seen piled up
-  // edge-on, then easing in close, focused on them rather than on the bulb, the stickers
-  // big enough to read and the tagline clear above them, the bulb hanging below its words.
+  // Off the last monitor and down under the glass to the flooded floor: high over the dark
+  // where the tiles drift, as the bulb comes down on its cord and catches.
+  { p: at('stack', 0.16), position: [0, -176.3, 6.6], target: [0, -178.6, -2] },
+  // Down in front of the wall as the tiles come together, the bulb overhead, out of the
+  // frame, its light falling on them through the dust; then creeping in while they float.
+  { p: at('stack', 0.55), position: [0, -178.58, 1.45], target: [0, -178.3, -2.2] },
+  { p: at('stack', 0.95), position: [0.05, -178.62, 1.3], target: [0, -178.3, -2.2] },
+  // Contact: backing away and down round the front while the tiles go up and the tapes come
+  // up out of the water, then easing in close, focused on the tapes rather than on the bulb,
+  // the stickers big enough to read and the tagline clear above them, the bulb hanging below
+  // its words.
+  { p: at('contact', 0.14), position: [0.7, -177.95, 4], target: [0, -178.35, 1.4] },
   { p: at('contact', 0.3), position: [0.15, -178.27, 5.25], target: [0, -178.33, 2.9] },
   { p: at('loop', 0), position: [0, -178.32, 5.15], target: [0, -178.28, 2.9] },
   // Teleport: both keyframes share p; the later one wins from LOOP_TELEPORT_P onwards.
@@ -172,9 +178,15 @@ export function cameraPoseAt(p: number, projectCount: number): CameraPose {
   return { position: [v[0], v[1], v[2]], target: [v[3], v[4], v[5]] };
 }
 
-/** How far the lens focuses: on whatever the camera looks at, never closer than half a metre. */
-export function focusDistance(pose: CameraPose): number {
+/**
+ * How far the lens focuses: on whatever the camera looks at, or pulled over toward a `subject`
+ * standing off it by as much as its weight says, never closer than half a metre.
+ */
+export function focusDistance(pose: CameraPose, subject?: { at: Vec3; weight: number } | null): number {
   const [x, y, z] = pose.position;
   const [tx, ty, tz] = pose.target;
-  return Math.max(0.5, Math.hypot(tx - x, ty - y, tz - z));
+  const onTarget = Math.hypot(tx - x, ty - y, tz - z);
+  if (!subject) return Math.max(0.5, onTarget);
+  const [sx, sy, sz] = subject.at;
+  return Math.max(0.5, onTarget + (Math.hypot(sx - x, sy - y, sz - z) - onTarget) * subject.weight);
 }

@@ -2,7 +2,9 @@ import { type ThreeEvent, useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import {
   BoxGeometry,
+  type Camera,
   CanvasTexture,
+  type Color,
   Group,
   Mesh,
   MeshBasicMaterial,
@@ -11,16 +13,29 @@ import {
   PlaneGeometry,
   type PointLight,
   SRGBColorSpace,
+  Vector3,
 } from 'three';
-import { playTapeClunk, playTapeSlide } from '@/audio/clicks';
+import { playFocusLock, playTapeClunk, playTapeSlide } from '@/audio/clicks';
 import { content } from '@/content';
 import { type ContactLink, scribbledHref } from '@/content/schema';
 import { damp, smoothstep } from '@/lib/math';
 import { useExperience } from '@/store/useExperience';
 import { resolve } from '@/timeline/resolve';
 import { MODELS, useModel } from '@/experience/assets';
-import { CASSETTE_REACH, CASSETTE_SCALE, cassettePose, type TapeLayout, tapeLayout } from '../depths/choreography';
+import {
+  CASSETTE_HALF_HEIGHT,
+  CASSETTE_REACH,
+  CASSETTE_SCALE,
+  cassettePose,
+  FLOOR_Y,
+  HOVER,
+  TAPES_UP_T,
+  type TapeLayout,
+  tapeLayout,
+} from '../depths/choreography';
+import { tapeSplashes } from '../depths/splashes';
 import { useChapterFrame } from '../useChapterFrame';
+import { focusBrackets, type ScreenRect } from '../focus';
 
 const LINKS = content.contact;
 const PARTS = ['Cassette_Shell', 'Cassette_Window', 'Cassette_Reels', 'Cassette_Label'];
@@ -32,6 +47,11 @@ const SLEEVE_END = 0.1;
 /** The sticker sits toward the sleeve's closed end. */
 const STICKER_X = -0.012;
 const HANDWRITING = '"Marker Felt", "Noteworthy", "Segoe Print", "Bradley Hand", "Ink Free", "Comic Sans MS", cursive';
+/** The invisible box the pointer sees round each tape (model metres); its width follows the slide. */
+const HIT = { height: 0.118, depth: 0.04 } as const;
+/** While one tape is picked the others dim by this much, and the fill light leans its way, this much brighter. */
+const DIM = 0.4;
+const FOCUS_LIGHT = 2.5;
 const noRaycast = () => undefined;
 
 function openLink(href: string) {
@@ -125,6 +145,10 @@ interface Tape {
   slide: number;
   /** Which end of the sleeve is open: the tape slides out to the right (+1) or left (-1). */
   side: 1 | -1;
+  /** Its own copies of its materials, and their colours as modelled: they dim while another is picked. */
+  paints: { material: MeshStandardMaterial; color: Color }[];
+  /** Whether its bottom edge was under the water last frame; null before the first. */
+  under: boolean | null;
 }
 
 /** The four tapes, each in its sleeve, copied from depths.glb with their own hand-written labels. */
@@ -133,11 +157,13 @@ class TapeKit {
   private readonly tapes: Tape[] = [];
   private readonly canvases: { sticker: HTMLCanvasElement; label: HTMLCanvasElement }[] = [];
   private readonly textures: CanvasTexture[] = [];
+  private readonly corner = new Vector3();
   private hovered = -1;
+  private lastT = 0;
 
   constructor(scene: Group) {
     const sleeve = scene.getObjectByName('Cassette_Sleeve');
-    const hitGeometry = new BoxGeometry(1, 0.118, 0.04);
+    const hitGeometry = new BoxGeometry(1, HIT.height, HIT.depth);
     const hitMaterial = new MeshBasicMaterial({ visible: false });
     LINKS.forEach((_, i) => {
       const sticker = document.createElement('canvas');
@@ -171,14 +197,20 @@ class TapeKit {
       paper.position.set(STICKER_X, 0.014, 0.0164);
       paper.rotation.z = (i % 2 ? 1 : -1) * 0.025;
       pivot.add(paper);
+      const paints: Tape['paints'] = [];
       pivot.traverse((child) => {
-        if ((child as Mesh).isMesh) child.raycast = noRaycast;
+        const mesh = child as Mesh;
+        if (!mesh.isMesh) return;
+        mesh.raycast = noRaycast;
+        const material = (mesh.material as MeshStandardMaterial).clone();
+        mesh.material = material;
+        paints.push({ material, color: material.color.clone() });
       });
       // One invisible box per tape is all the pointer sees; it grows as the tape slides out.
       const hit = new Mesh(hitGeometry, hitMaterial);
       hit.userData.tape = i;
       pivot.add(hit);
-      this.tapes.push({ pivot, cassette, sleeve: sleeveCopy, paper, hit, slide: 0, side: 1 });
+      this.tapes.push({ pivot, cassette, sleeve: sleeveCopy, paper, hit, slide: 0, side: 1, paints, under: null });
       this.canvases.push({ sticker, label });
       this.textures.push(stickerMap, labelMap);
       this.root.add(pivot);
@@ -218,13 +250,67 @@ class TapeKit {
     return wasOut;
   }
 
+  /** The tape under the pointer, or -1. */
+  get picked(): number {
+    return this.hovered;
+  }
+
+  /** How far the most picked tape is out (0..1), and where across it waits. */
+  focus(): { x: number; amount: number } {
+    let best = { x: 0, amount: 0 };
+    for (const tape of this.tapes) if (tape.slide > best.amount) best = { x: tape.pivot.position.x, amount: tape.slide };
+    return best;
+  }
+
+  /** Where the tape under the pointer is on the screen, sleeve and slid-out tape together. */
+  rectOf(camera: Camera, width: number, height: number): ScreenRect | null {
+    if (this.hovered < 0) return null;
+    const { hit } = this.tapes[this.hovered];
+    hit.updateWorldMatrix(true, false);
+    // The rig has already moved the camera this frame (Experience.tsx mounts it first), but its
+    // matrices only catch up at render: without this the brackets trail the handheld sway.
+    camera.updateMatrixWorld();
+    let left = Infinity;
+    let top = Infinity;
+    let right = -Infinity;
+    let bottom = -Infinity;
+    for (let k = 0; k < 8; k++) {
+      this.corner.set(k & 1 ? 0.5 : -0.5, (k & 2 ? 0.5 : -0.5) * HIT.height, (k & 4 ? 0.5 : -0.5) * HIT.depth);
+      this.corner.applyMatrix4(hit.matrixWorld).project(camera);
+      const x = ((this.corner.x + 1) / 2) * width;
+      const y = ((1 - this.corner.y) / 2) * height;
+      left = Math.min(left, x);
+      right = Math.max(right, x);
+      top = Math.min(top, y);
+      bottom = Math.max(bottom, y);
+    }
+    return { x: left, y: top, width: right - left, height: bottom - top };
+  }
+
   update(t: number, time: number, delta: number, layout: TapeLayout) {
+    // A jump (the menu, Home) moves the tapes at once: no rings on the water for that.
+    const jumped = Math.abs(t - this.lastT) > 0.05;
+    this.lastT = t;
     this.tapes.forEach((tape, i) => {
-      const { position, yaw, tilt, side } = cassettePose(i, this.tapes.length, t, time, layout);
-      if (side !== tape.side) this.open(i, side);
-      tape.pivot.position.set(...position);
-      tape.pivot.rotation.set(tilt, yaw, 0.03 * Math.sin(time * 0.6 + i));
       tape.slide = damp(tape.slide, i === this.hovered ? 1 : 0, 9, delta);
+    });
+    this.tapes.forEach((tape, i) => {
+      const { position, yaw, tilt, roll, side } = cassettePose(i, this.tapes.length, t, time, layout);
+      if (side !== tape.side) this.open(i, side);
+      // Picked: grown, come forward and squared up to the camera, while the others dim.
+      const picked = tape.slide;
+      tape.pivot.position.set(position[0], position[1], position[2] + HOVER.forward * picked);
+      tape.pivot.rotation.set(tilt * (1 - picked), yaw * (1 - picked), roll * (1 - picked));
+      tape.pivot.scale.setScalar(CASSETTE_SCALE * (1 + (HOVER.grow - 1) * picked));
+      let others = 0;
+      this.tapes.forEach((other, j) => {
+        if (j !== i) others = Math.max(others, other.slide);
+      });
+      for (const { material, color } of tape.paints) material.color.copy(color).multiplyScalar(1 - DIM * others);
+      // Coming up through the water, or going back under it: the floor rings (depths/splashes.ts).
+      const under = position[1] - CASSETTE_HALF_HEIGHT < FLOOR_Y;
+      if (tape.under !== null && under !== tape.under && !jumped) tapeSplashes.add(position[0], position[2], time);
+      tape.under = under;
       const out = REST_OUT + SLIDE_OUT * tape.slide;
       tape.cassette.position.x = side * out;
       // Sleeve plus whatever of the tape sticks out of its open end.
@@ -250,7 +336,11 @@ function setPointer(on: boolean) {
   else if (document.documentElement.dataset.cursor === 'pointer') delete document.documentElement.dataset.cursor;
 }
 
-/** Contact (spec §3.9): VHS tapes rise out of the water, one per link; hover slides one out, click plays it. */
+/**
+ * Contact (spec §3.9): VHS tapes rise out of the water, one per link. Hover picks one: it slides
+ * out toward the middle, grows and comes forward, the others dim and the camcorder locks focus
+ * on it (ui/FocusBrackets.tsx). Click plays it.
+ */
 export function Cassettes() {
   const ref = useRef<Group>(null);
   const fill = useRef<PointLight>(null);
@@ -263,27 +353,37 @@ export function Cassettes() {
     return () => kit.dispose();
   }, [kit]);
 
-  // The camera has come round to face the tapes by then (camera/paths.ts).
+  // The tapes are all but in their places by then, facing the camera (camera/paths.ts).
   const live = () => {
     const { chapter, t } = resolve(useExperience.getState().p);
-    return chapter.id === 'contact' && t > 0.3;
+    return chapter.id === 'contact' && t > TAPES_UP_T - 0.05;
   };
   useChapterFrame('contact', ref);
-  useFrame(({ size }, delta) => {
+  useFrame(({ camera, size }, delta) => {
     const { p, time } = useExperience.getState();
     const { chapter, t } = resolve(p);
     const local = chapter.id === 'contact' ? t : chapter.id === 'loop' ? 1 : 0;
     kit.update(local, time, Math.min(delta, 0.1), tapeLayout(size.width / size.height));
-    if (fill.current) fill.current.intensity = 5 * smoothstep(0, 0.25, local);
+    const focus = kit.focus();
+    if (fill.current) {
+      fill.current.intensity = 5 * smoothstep(0, 0.3, local) + FOCUS_LIGHT * focus.amount;
+      fill.current.position.x = 0.7 * focus.x * focus.amount;
+    }
     // Scrolled away with a tape out: it goes back in its sleeve.
     if (!live() && kit.release()) useExperience.getState().setTape(null);
+    const rect = kit.rectOf(camera, size.width, size.height);
+    if (rect) focusBrackets.lock(`tape-${kit.picked}`, rect);
+    else focusBrackets.release('tape-');
   });
 
   const onOver = (event: ThreeEvent<PointerEvent>) => {
     const index = tapeOf(event.object);
     if (index < 0 || !live()) return;
     event.stopPropagation();
-    if (kit.hover(index)) playTapeSlide(true);
+    if (kit.hover(index)) {
+      playTapeSlide(true);
+      playFocusLock();
+    }
     useExperience.getState().setTape(index);
     setPointer(true);
   };

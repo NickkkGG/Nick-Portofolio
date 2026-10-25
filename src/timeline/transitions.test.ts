@@ -27,8 +27,8 @@ describe('boundarySpike', () => {
 
   it('crossing any other chapter boundary, either way, gives a light skip (the glass does the rest)', () => {
     expect(BOUNDARY_SPIKE).toBe(0.15);
-    expect(boundarySpike(start('problem') - 0.001, start('problem') + 0.001)).toBe(BOUNDARY_SPIKE);
-    expect(boundarySpike(start('problem') + 0.001, start('problem') - 0.001)).toBe(BOUNDARY_SPIKE);
+    expect(boundarySpike(start('stack') - 0.001, start('stack') + 0.001)).toBe(BOUNDARY_SPIKE);
+    expect(boundarySpike(start('stack') + 0.001, start('stack') - 0.001)).toBe(BOUNDARY_SPIKE);
     expect(boundarySpike(start('fall') + 0.001, start('fall') - 0.001)).toBe(BOUNDARY_SPIKE);
     expect(boundarySpike(start('about') + 0.001, start('about') - 0.001)).toBe(BOUNDARY_SPIKE);
   });
@@ -69,7 +69,7 @@ describe('glassAt', () => {
   });
 
   it('is the same either side of the change, except where the floor gives way and where the figure lands', () => {
-    for (const id of ['spiral', 'problem', 'stack', 'contact', 'loop'] as const) {
+    for (const id of ['spiral', 'stack', 'contact', 'loop'] as const) {
       const b = start(id);
       expect(Math.abs(glassAt(b - 0.004).amount - glassAt(b + 0.004).amount), id).toBeLessThan(1e-9);
     }
@@ -97,9 +97,9 @@ describe('glassAt', () => {
   });
 
   it('the big descents go through the thickest glass; the booth window only brushes it', () => {
-    const at = (id: 'spiral' | 'problem' | 'stack') => glassAt(start(id)).amount;
-    expect(at('problem')).toBe(1);
-    expect(at('stack')).toBeLessThan(at('problem'));
+    const at = (id: 'spiral' | 'stack' | 'contact') => glassAt(start(id)).amount;
+    expect(at('stack')).toBe(1);
+    expect(at('contact')).toBeLessThan(at('stack'));
     expect(at('spiral')).toBeLessThan(0.5);
   });
 

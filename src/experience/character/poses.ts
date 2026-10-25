@@ -52,8 +52,7 @@ export function fallMix(time: number): ClipMix[] {
 }
 
 
-/** Stack-local t over which the character gets up off the dead TV, and how long the hand-overs take. */
-const RISE = { from: 0.05, to: 0.45 } as const;
+/** How long the hand-overs into and out of getting up take, as a share of the rise. */
 const HANDOVER = 0.06;
 /** Getting up ends a step forward: the standing clip plays from there. */
 export const STEP_FORWARD: Vec3 = [0, 0, 0.4];
@@ -79,15 +78,4 @@ export function boothMix(p: number, time: number): ClipMix[] {
   const { chapter, t } = resolve(p);
   if (chapter.id === 'spiral') return [looping('Stand', time, 1, STEP_FORWARD)];
   return rising(standUp(t), time);
-}
-
-/**
- * Down in the depths (spec §3.7-3.9): hunched on the dead TV through the problems, getting
- * up once the idea's bulb is lit, then standing among the tapes until the loop.
- */
-export function depthsMix(p: number, time: number): ClipMix[] {
-  const { chapter, t } = resolve(p);
-  if (chapter.id === 'contact' || chapter.id === 'loop') return [looping('Stand', time, 1, STEP_FORWARD)];
-  if (chapter.id !== 'stack') return [looping('SitHunched', time)];
-  return rising(clamp01((t - RISE.from) / (RISE.to - RISE.from)), time);
 }

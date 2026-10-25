@@ -36,15 +36,12 @@ export function ContentDocument() {
         </ul>
       </section>
       <section>
-        <h2>Ideas</h2>
-        <p>{about.motto}</p>
-      </section>
-      <section>
         <h2>Stack</h2>
+        <p>{site.stackTitle}</p>
         <ul>
           {stack.map((item) => (
             <li key={item.name}>
-              {item.name} — {item.category}
+              {item.note ? `${item.name} — ${item.note}` : item.name}
             </li>
           ))}
         </ul>

@@ -15,10 +15,9 @@ test.describe('OSD', () => {
       [chapterP('fall', 0.5), 'CH-02 / FALL'],
       [chapterP('about', 0.5), 'CH-03 / ABOUT'],
       [chapterP('spiral', 0.5), 'CH-04 / WORK'],
-      [chapterP('problem', 0.5), 'CH-05 / IDEAS'],
-      [chapterP('stack', 0.5), 'CH-06 / STACK'],
-      [chapterP('contact', 0.5), 'CH-07 / CONTACT'],
-      [chapterP('loop', 0.5), 'CH-08 / LOOP'],
+      [chapterP('stack', 0.5), 'CH-05 / STACK'],
+      [chapterP('contact', 0.5), 'CH-06 / CONTACT'],
+      [chapterP('loop', 0.5), 'CH-07 / LOOP'],
       [chapterP('loop', 0.95), 'CH-01 / ROOM'],
     ];
     for (const [p, label] of cases) {

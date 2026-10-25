@@ -22,11 +22,10 @@ const RANGES: Record<VisibilityGroup, readonly Range[]> = {
   // The pillar: kept out of the fall, which drops through clear air, and hidden behind the
   // booth walls and the sheet until it drops; then it is there through the window.
   spiral: [[chapterP('about', 0.75), getChapter('spiral').end + MARGIN, true]],
-  problem: [around('problem')],
   stack: [around('stack')],
   contact: [around('contact')],
   loop: [around('loop')],
-  depths: [[getChapter('problem').start - MARGIN, LOOP_TELEPORT_P, false]],
+  depths: [[getChapter('stack').start - MARGIN, LOOP_TELEPORT_P, false]],
 };
 
 export function isVisible(group: VisibilityGroup, p: number): boolean {

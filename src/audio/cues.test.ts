@@ -5,7 +5,8 @@ import { lampNervousness } from '@/experience/chapters/room/knock';
 import { flickerDips } from '@/experience/flicker';
 import { BEAM_OUT_T, PROJECTOR_ON_T, SHEET_DROP_T, SLIDES } from '@/experience/chapters/booth/slides';
 import { DUST } from '@/experience/chapters/fall/dust';
-import { type Ambient, ambientSounds, dripsBetween, glitchesBetween, scrollCues } from './cues';
+import { BULB_LIGHTS_T, CASSETTE_HALF_HEIGHT, cassettePose, FLOOR_Y } from '@/experience/chapters/depths/choreography';
+import { type Ambient, ambientSounds, dripsBetween, scrollCues } from './cues';
 
 const at = (id: ChapterId, t: number) => {
   const chapter = CHAPTERS.find((c) => c.id === id)!;
@@ -55,8 +56,8 @@ describe('sounds the scroll sets off', () => {
   });
 
   it('every other chapter change switches channel, and so does scrolling back up', () => {
-    expect(cues(at('spiral', 0.99), at('problem', 0.01))).toEqual(['channel']);
-    expect(cues(at('problem', 0.99), at('stack', 0.01))).toEqual(['channel']);
+    expect(cues(at('spiral', 0.99), at('stack', 0.01))).toEqual(['channel']);
+    expect(cues(at('stack', 0.99), at('contact', 0.01))).toEqual(['channel']);
     expect(cues(at('fall', 0.02), at('room', 0.95))).toEqual(['channel']);
     expect(cues(at('spiral', 0.002), at('fall', 0.98))).toEqual(['channel']);
   });
@@ -67,12 +68,19 @@ describe('sounds the scroll sets off', () => {
   });
 
   it('the bulb lights once, on the way down', () => {
-    expect(cues(at('problem', 0.58), at('problem', 0.66))).toEqual(['bulb']);
-    expect(cues(at('problem', 0.66), at('problem', 0.58))).toEqual([]);
+    expect(cues(at('stack', BULB_LIGHTS_T - 0.03), at('stack', BULB_LIGHTS_T + 0.03))).toEqual(['bulb']);
+    expect(cues(at('stack', BULB_LIGHTS_T + 0.03), at('stack', BULB_LIGHTS_T - 0.03))).toEqual([]);
   });
 
-  it('the tapes come up out of the water', () => {
-    expect(cues(at('contact', 0.05), at('contact', 0.1))).toEqual(['tapes']);
+  it('the tiles clink into the wall as the first of them arrive, scrolling on', () => {
+    expect(cues(at('stack', 0.36), at('stack', 0.44))).toEqual(['tiles']);
+    expect(cues(at('stack', 0.44), at('stack', 0.36))).toEqual([]);
+  });
+
+  it('the tapes come up out of the water: the slosh as the first one breaks the surface', () => {
+    let surfaces = 0;
+    while (cassettePose(0, 4, surfaces).position[1] - CASSETTE_HALF_HEIGHT <= FLOOR_Y) surfaces += 0.001;
+    expect(cues(at('contact', surfaces - 0.02), at('contact', surfaces + 0.01))).toEqual(['tapes']);
   });
 
   it('each new monitor on the pillar tunes in', () => {
@@ -105,14 +113,6 @@ describe('sounds on the clock', () => {
     for (const drip of some) expect(Math.hypot(drip.x, drip.z)).toBeGreaterThan(1);
   });
 
-  it('the problems glitch now and then, never in a steady beat', () => {
-    const times: number[] = [];
-    for (let t = 0; t < 120; t += 1 / 60) times.push(...glitchesBetween(t, t + 1 / 60));
-    expect(times.length).toBeGreaterThan(25);
-    expect(times.length).toBeLessThan(80);
-    const gaps = times.slice(1).map((t, i) => t - times[i]);
-    expect(Math.max(...gaps) - Math.min(...gaps)).toBeGreaterThan(0.8);
-  });
 });
 
 describe('the sounds of the place, frame by frame', () => {
@@ -138,17 +138,13 @@ describe('the sounds of the place, frame by frame', () => {
   });
 
   it('drips fall below, under the pillar, and not up in the room or among the monitors', () => {
-    for (const id of ['problem', 'stack', 'contact'] as const) expect(named(listen(at(id, 0.5), 10), 'drip').length, id).toBeGreaterThan(5);
+    for (const id of ['stack', 'contact'] as const) expect(named(listen(at(id, 0.5), 10), 'drip').length, id).toBeGreaterThan(5);
     for (const id of ['room', 'fall', 'spiral'] as const) expect(named(listen(at(id, 0.5), 10), 'drip'), id).toEqual([]);
   });
 
-  it('the problems glitch in the dark until the bulb lights', () => {
-    expect(named(listen(at('problem', 0.3), 20), 'glitch').length).toBeGreaterThan(4);
-    expect(named(listen(at('problem', 0.9), 20), 'glitch')).toEqual([]);
-  });
 
   it('places every sound within the stereo field and at a sane loudness', () => {
-    for (const sound of [...listen(at('room', 0.85), 10), ...listen(at('problem', 0.3), 10)]) {
+    for (const sound of [...listen(at('room', 0.85), 10), ...listen(at('stack', 0.5), 10)]) {
       expect(Math.abs(sound.pan)).toBeLessThanOrEqual(1);
       expect(sound.level).toBeGreaterThan(0);
       expect(sound.level).toBeLessThanOrEqual(1);

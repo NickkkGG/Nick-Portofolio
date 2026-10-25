@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { chapterP, freeze, jumpTo, openExperience, play } from './helpers';
 
 const MOTTO = 'Every problem I run into becomes an idea.';
+const STACK_TITLE = "Tools I've picked up along the way";
 
 test.describe('chapter texts', () => {
   test.beforeEach(async ({ page }) => {
@@ -23,8 +24,8 @@ test.describe('chapter texts', () => {
     const cases: [number, string][] = [
       [chapterP('room', 0.3), "Hi, I'm Nick Nelson"],
       [chapterP('spiral', 0.17), 'Project 01'],
-      [chapterP('problem', 0.9), MOTTO],
-      [chapterP('stack', 0.8), 'JavaScript'],
+      [chapterP('stack', 0.8), STACK_TITLE],
+      [chapterP('stack', 0.8), 'point at a tile'],
       [chapterP('contact', 0.65), 'pick a tape'],
     ];
     const nav = await page.getByRole('navigation').boundingBox();
@@ -47,12 +48,12 @@ test.describe('chapter texts', () => {
     await expect(texts).toContainText('Project 03');
   });
 
-  test('the IDEAS motto waits for the bulb', async ({ page }) => {
+  test('the STACK title waits for the wall of tiles', async ({ page }) => {
     const texts = page.getByTestId('chapter-texts');
-    await jumpTo(page, chapterP('problem', 0.5));
-    await expect(texts.getByText(MOTTO)).toHaveCount(0);
-    await jumpTo(page, chapterP('problem', 0.9));
-    await expect(texts.getByText(MOTTO)).toBeVisible();
+    await jumpTo(page, chapterP('stack', 0.3));
+    await expect(texts.getByText(STACK_TITLE)).toHaveCount(0);
+    await jumpTo(page, chapterP('stack', 0.8));
+    await expect(texts.getByText(STACK_TITLE)).toBeVisible();
   });
 });
 
@@ -61,5 +62,6 @@ test('content is in the server HTML', async ({ request }) => {
   expect(html).toContain(MOTTO);
   expect(html).toContain('Problems become ideas.');
   expect(html).toContain('Project 06');
-  expect(html).toContain('Tool 10');
+  expect(html).toContain(STACK_TITLE.replace("'", '&#x27;'));
+  expect(html).toContain('JavaScript');
 });

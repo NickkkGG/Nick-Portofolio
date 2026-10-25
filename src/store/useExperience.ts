@@ -30,6 +30,8 @@ export interface ExperienceState {
   knock: KnockState;
   sounds: SoundEvent[];
   lastActivity: number;
+  /** The stack tile under the pointer, if any. */
+  tile: number | null;
   /** The contact tape under the pointer, if any. */
   tape: number | null;
   /** Whether the soundtrack plays (the visitor's choice; the sounds of the scene always do). */
@@ -45,6 +47,7 @@ export interface ExperienceState {
   setCameraPose(pose: CameraPose): void;
   registerScroll(api: ScrollApi | null): void;
   knockAt(position: Vec3): boolean;
+  setTile(index: number | null): void;
   setTape(index: number | null): void;
   setMusic(on: boolean): void;
 }
@@ -75,6 +78,7 @@ export const initialExperienceState: Pick<
   | 'knock'
   | 'sounds'
   | 'lastActivity'
+  | 'tile'
   | 'tape'
   | 'music'
 > = {
@@ -93,6 +97,7 @@ export const initialExperienceState: Pick<
   knock: INITIAL_KNOCK,
   sounds: [],
   lastActivity: 0,
+  tile: null,
   tape: null,
   music: true,
 };
@@ -148,6 +153,9 @@ export const useExperience = create<ExperienceState>()(
         lastActivity: time,
       });
       return true;
+    },
+    setTile: (index) => {
+      if (get().tile !== index) set({ tile: index });
     },
     setTape: (index) => {
       if (get().tape !== index) set({ tape: index });

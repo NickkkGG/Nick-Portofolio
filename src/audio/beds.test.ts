@@ -12,7 +12,7 @@ describe('the sound under each chapter', () => {
   it('static hisses only among the project monitors, louder when they surge', () => {
     const calm = bedLevels(at('spiral', 0.5), 0, 0);
     expect(calm.static).toBeGreaterThan(0.2);
-    for (const id of ['room', 'fall', 'problem', 'contact'] as const) expect(bedLevels(at(id, 0.5), 0, 0).static).toBe(0);
+    for (const id of ['room', 'fall', 'stack', 'contact'] as const) expect(bedLevels(at(id, 0.5), 0, 0).static).toBe(0);
     let loudest = 0;
     for (let time = 0; time < 30; time += 0.01) loudest = Math.max(loudest, bedLevels(at('spiral', 0.5), time, 0).static);
     expect(loudest).toBeGreaterThan(calm.static + 0.2);
@@ -40,13 +40,13 @@ describe('the sound under each chapter', () => {
   it('the lit bulb hums over the stack and the contact tapes, and not before it lights', () => {
     expect(bedLevels(at('stack', 0.5), 0, 0).hum).toBeGreaterThan(0);
     expect(bedLevels(at('contact', 0.5), 0, 0).hum).toBeGreaterThan(0);
-    expect(bedLevels(at('problem', 0.3), 0, 0).hum).toBe(0);
+    expect(bedLevels(at('stack', 0.08), 0, 0).hum).toBe(0);
   });
 
-  it('a drone holds in the dark until the bulb lights', () => {
-    expect(bedLevels(at('problem', 0.3), 0, 0).dark).toBeGreaterThan(0.3);
-    expect(bedLevels(at('problem', 0.9), 0, 0).dark).toBeLessThan(0.05);
-    expect(bedLevels(at('stack', 0.5), 0, 0).dark).toBe(0);
+  it('a drone holds in the dark coming down off the pillar, until the bulb lights', () => {
+    expect(bedLevels(at('stack', 0.08), 0, 0).dark).toBeGreaterThan(0.3);
+    expect(bedLevels(at('stack', 0.5), 0, 0).dark).toBeLessThan(0.05);
+    expect(bedLevels(at('contact', 0.5), 0, 0).dark).toBe(0);
   });
 
   it('the first monitor hisses in gently once the beam finds it, so the static never cuts in', () => {
@@ -61,7 +61,7 @@ describe('the sound under each chapter', () => {
     expect(bedLevels(at('about', 0.5), 0, 0).projector).toBeGreaterThan(0.3);
     expect(bedLevels(at('about', 0.99), 0, 0).projector).toBeLessThan(bedLevels(at('about', 0.5), 0, 0).projector);
     expect(bedLevels(at('spiral', 0.2), 0, 0).projector).toBe(0);
-    for (const id of ['room', 'fall', 'problem', 'contact'] as const) expect(bedLevels(at(id, 0.5), 0, 0).projector).toBe(0);
+    for (const id of ['room', 'fall', 'stack', 'contact'] as const) expect(bedLevels(at(id, 0.5), 0, 0).projector).toBe(0);
   });
 
   it('fades in and out at the chapter edges instead of cutting, and carries on through the booth window', () => {

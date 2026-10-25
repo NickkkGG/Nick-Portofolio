@@ -36,7 +36,6 @@ export const ATMOSPHERES: Record<ChapterId, Atmosphere> = {
   // The booth hangs in the same teal dark as the pillar, only dimmer: inside, the projector does the lighting.
   about: preset('#17403e', '#0a1f20', '#030707', '#0b2122', 0.012, 1.5),
   spiral: preset('#1d5a56', '#0d2b2c', '#030a0b', '#0f2f30', 0.016, 1.4),
-  problem: preset('#4a1210', '#1e0807', '#050202', '#240a08', 0.022, 1.35),
   stack: preset('#4a3010', '#1e1306', '#050302', '#24170a', 0.02, 1.45),
   contact: preset('#3a2710', '#181006', '#040302', '#1c1308', 0.018, 1.45),
   loop: preset('#000000', '#000000', '#000000', '#000000', 0.03, 1),

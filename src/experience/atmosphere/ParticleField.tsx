@@ -3,6 +3,7 @@ import { useMemo, useRef } from 'react';
 import { AdditiveBlending, BufferAttribute, BufferGeometry, Color, type Points, type ShaderMaterial, Vector3 } from 'three';
 import { useChapterFrame } from '@/experience/chapters/useChapterFrame';
 import { focusDistance } from '@/experience/camera/paths';
+import { tapeFocus } from '@/experience/chapters/depths/choreography';
 import type { Vec3 } from '@/experience/camera/types';
 import { LENS } from '@/experience/effects/lens';
 import { mulberry32 } from '@/lib/random';
@@ -158,7 +159,7 @@ export function ParticleField({
     shader.uniforms.uTime.value = time;
     shader.uniforms.uOpacity.value = opacityAt ? opacity * opacityAt(p) : opacity;
     shader.uniforms.uViewportHeight.value = viewport.height * gl.getPixelRatio();
-    if (cameraPose) shader.uniforms.uFocus.value = focusDistance(cameraPose);
+    if (cameraPose) shader.uniforms.uFocus.value = focusDistance(cameraPose, tapeFocus(p, viewport.width / viewport.height));
   });
 
   return (

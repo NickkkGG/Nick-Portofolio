@@ -8,11 +8,15 @@ describe('reveal', () => {
     expect(revealFraction(0.8, TEXT_WINDOWS.roomIntro)).toBe(0);
   });
 
-  it('the IDEAS motto types in as the bulb lights, then stays up to the end of the chapter', () => {
-    expect(revealFraction(0.55, TEXT_WINDOWS.ideasMotto)).toBe(0);
-    expect(revealFraction(0.64, TEXT_WINDOWS.ideasMotto)).toBeCloseTo(0.5);
-    expect(revealFraction(0.7, TEXT_WINDOWS.ideasMotto)).toBe(1);
-    expect(revealFraction(0.94, TEXT_WINDOWS.ideasMotto)).toBe(1);
+  it('the STACK title types in once the bulb is up out of the frame, as the wall comes together, and stays up until the glass', () => {
+    expect(revealFraction(0.49, TEXT_WINDOWS.stackTitle)).toBe(0);
+    expect(revealFraction(0.56, TEXT_WINDOWS.stackTitle)).toBeCloseTo(0.5);
+    expect(revealFraction(0.62, TEXT_WINDOWS.stackTitle)).toBe(1);
+    expect(revealFraction(0.9, TEXT_WINDOWS.stackTitle)).toBe(1);
+    expect(revealFraction(0.99, TEXT_WINDOWS.stackTitle)).toBeLessThan(0.5);
+    // The hint about pointing at the tiles follows it in.
+    expect(revealFraction(0.55, TEXT_WINDOWS.stackHint)).toBe(0);
+    expect(revealFraction(0.7, TEXT_WINDOWS.stackHint)).toBe(1);
   });
 
   it('typedCount rounds and clamps', () => {

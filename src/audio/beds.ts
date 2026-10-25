@@ -46,11 +46,11 @@ export function bedLevels(p: number, time: number, speed: number): Record<Bed, n
       levels.static = (1 - smoothstep(0.94, 1, t)) * (FIRST_STATIC + 0.4 * surgeLevel(time) * smoothstep(0, 0.12, t));
       levels.projector = FAN_OUTSIDE * (1 - smoothstep(0, 0.06, t));
       break;
-    case 'problem':
+    case 'stack':
+      // Down off the pillar into the dark, until the bulb lights and hums.
       levels.dark = edges(t) * 0.6 * (1 - lit);
       levels.hum = 0.25 * lit;
       break;
-    case 'stack':
     case 'contact':
       levels.hum = 0.25 * lit;
       break;

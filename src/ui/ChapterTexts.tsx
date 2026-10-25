@@ -9,9 +9,10 @@ import { displayState } from '@/timeline/loop';
 import { DecodeText } from './DecodeText';
 import { showKnockHint } from './knockHint';
 import { revealFraction, TEXT_WINDOWS } from './reveal';
+import { FocusBrackets } from './FocusBrackets';
 
 const pad = (n: number) => String(n).padStart(2, '0');
-const { site, projects, about, stack, contact } = content;
+const { site, projects, stack, contact } = content;
 
 function RoomText({ t }: { t: number }) {
   const f = revealFraction(t, TEXT_WINDOWS.roomIntro);
@@ -62,26 +63,24 @@ function SpiralText({ t }: { t: number }) {
   );
 }
 
-function ProblemText({ t }: { t: number }) {
+function StackText({ t }: { t: number }) {
+  const hint = revealFraction(t, TEXT_WINDOWS.stackHint);
+  // A tile's name is painted on it, but small from here: the one under the pointer says it again.
+  const tile = useExperience((s) => s.tile);
+  const picked = tile === null ? null : stack[tile];
   return (
-    <div data-overlay-item className="absolute bottom-24 left-1/2 w-full max-w-2xl -translate-x-1/2 px-6 text-center">
-      <p className="font-osd text-4xl">
-        <DecodeText text={about.motto} fraction={revealFraction(t, TEXT_WINDOWS.ideasMotto)} />
+    <div data-overlay-item className="absolute left-1/2 top-24 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 text-center font-osd">
+      <p className="text-4xl">
+        <DecodeText text={site.stackTitle} fraction={revealFraction(t, TEXT_WINDOWS.stackTitle)} />
+      </p>
+      <p data-testid="tile-hint" className="mt-3 text-base tracking-wider opacity-70 sm:text-xl sm:tracking-widest">
+        {picked === null ? (
+          <DecodeText text={`▸ point at a tile · ${stack.length} on the wall`} fraction={hint} />
+        ) : (
+          <DecodeText text={`▸ ${picked.note ? `${picked.name} · ${picked.note}` : picked.name}`} />
+        )}
       </p>
     </div>
-  );
-}
-
-function StackText({ t }: { t: number }) {
-  const f = revealFraction(t, TEXT_WINDOWS.stackList);
-  return (
-    <ul data-overlay-item className="absolute right-10 top-1/4 text-right font-osd text-2xl leading-snug">
-      {stack.map((item) => (
-        <li key={item.name}>
-          <DecodeText text={`${item.name} — ${item.category}`} fraction={f} />
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -91,11 +90,11 @@ function ContactText({ t }: { t: number }) {
   // A tape's own label is too small to read from here: the one under the pointer names its address.
   const tape = useExperience((s) => s.tape);
   return (
-    <div data-overlay-item className="absolute left-1/2 top-24 -translate-x-1/2 text-center font-osd">
+    <div data-overlay-item className="absolute left-1/2 top-24 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 text-center font-osd">
       <p className="text-4xl">
         <DecodeText text={site.tagline} fraction={revealFraction(t, TEXT_WINDOWS.contactTagline)} />
       </p>
-      <p data-testid="tape-hint" className="mt-3 text-xl tracking-widest opacity-70">
+      <p data-testid="tape-hint" className="mt-3 text-base tracking-wider opacity-70 sm:text-xl sm:tracking-widest">
         {tape === null ? (
           <DecodeText text={`▸ pick a tape · ${contact.length} on the shelf`} fraction={hint} />
         ) : (
@@ -116,9 +115,9 @@ export function ChapterTexts() {
     <div data-testid="chapter-texts" className="glass-veil absolute inset-0 text-osd">
       {chapterId === 'room' && <RoomText t={t} />}
       {chapterId === 'spiral' && <SpiralText t={t} />}
-      {chapterId === 'problem' && <ProblemText t={t} />}
       {chapterId === 'stack' && <StackText t={t} />}
       {chapterId === 'contact' && <ContactText t={t} />}
+      {(chapterId === 'stack' || chapterId === 'contact') && <FocusBrackets />}
     </div>
   );
 }

@@ -8,4 +8,5 @@ export const site: z.input<typeof siteSchema> = {
   greeting: `Hi, I'm ${name}`,
   role: 'Creative Developer',
   tagline: "Got a problem? I've got an idea.",
+  stackTitle: "Tools I've picked up along the way",
 };

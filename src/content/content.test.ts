@@ -10,7 +10,7 @@ function noSignal(n: number): Project {
 describe('content', () => {
   it('dummy content parses and has 6 projects', () => {
     expect(content.projects).toHaveLength(6);
-    expect(content.stack).toHaveLength(10);
+    expect(content.stack).toHaveLength(7);
     expect(content.contact.map((c) => c.label)).toEqual(['EMAIL', 'GITHUB', 'LINKEDIN', 'CV']);
   });
 
@@ -24,8 +24,8 @@ describe('content', () => {
     expect(content.about.motto).toBe('Every problem I run into becomes an idea.');
   });
 
-  it('the stack starts with what the owner has used', () => {
-    expect(content.stack.slice(0, 3).map((item) => item.name)).toEqual(['JavaScript', 'Python', 'HTML']);
+  it('the stack is what the owner has named', () => {
+    expect(content.stack.map((item) => item.name)).toEqual(['HTML', 'CSS', 'JavaScript', 'Python', 'Java', 'Vercel', 'Luau']);
   });
 
   it('a slide too long for the sheet is rejected and names the field', () => {

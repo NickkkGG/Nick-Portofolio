@@ -1,7 +1,22 @@
-import { PerspectiveCamera, Vector3 } from 'three';
+import { Euler, PerspectiveCamera, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BOOTH } from '@/experience/chapters/booth/layout';
-import { BULB_Y, CASSETTE_HALF_HEIGHT, CASSETTE_REACH, CASSETTE_WIDTH, cassettePose } from '@/experience/chapters/depths/choreography';
+import {
+  BULB_Y,
+  CASSETTE_HALF_HEIGHT,
+  CASSETTE_REACH,
+  CASSETTE_WIDTH,
+  cassettePose,
+  HOVER,
+  TILE,
+  TILE_HOVER,
+  TILES_UP_T,
+  tapeFocus,
+  tapeLayout,
+  tileScale,
+  tileSlot,
+} from '@/experience/chapters/depths/choreography';
+import { content } from '@/content';
 import { helixSlots, slotKeyframeT } from '@/experience/chapters/spiral/helix';
 import { getChapter } from '@/timeline/chapters';
 import { LOOP_TELEPORT_P } from '@/timeline/loop';
@@ -11,9 +26,9 @@ import type { CameraPose, Vec3 } from './types';
 
 const distance = (a: Vec3, b: Vec3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
-/** Where `point` lands on a 16:9 screen seen from `pose` through the site's 50° lens, -1..1 each way. */
-function onScreen(pose: CameraPose, point: Vec3): [number, number] {
-  const camera = new PerspectiveCamera(50, 16 / 9, 0.05, 400);
+/** Where `point` lands on a screen (16:9 unless `aspect` says) seen from `pose` through the site's 50° lens, -1..1 each way. */
+function onScreen(pose: CameraPose, point: Vec3, aspect = 16 / 9): [number, number] {
+  const camera = new PerspectiveCamera(50, aspect, 0.05, 400);
   camera.position.set(...pose.position);
   camera.lookAt(...pose.target);
   camera.updateMatrixWorld();
@@ -72,6 +87,91 @@ describe('camera paths', () => {
     }
   });
 
+  it('over the stack the whole wall of tiles is in frame, under the title, the bulb overhead and out of the frame', () => {
+    for (const count of [content.stack.length, 12, 16, 20, 24]) {
+      for (const t of [TILES_UP_T, 0.8, 0.95]) {
+        const pose = cameraPoseAt(chapterP('stack', t), 6);
+        // Monitors, an iPad on its side, an iPad upright, phones upright.
+        for (const aspect of [16 / 9, 16 / 10, 4 / 3, 3 / 4, 390 / 844, 375 / 812]) {
+          const corners: [number, number][] = [];
+          for (let i = 0; i < count; i++) {
+            const [x, y, z] = tileSlot(i, count, aspect).position;
+            // Picked: grown, and come forward.
+            const half = (TILE.size / 2) * tileScale(count, aspect) * TILE_HOVER.grow;
+            for (const dx of [-half, half]) for (const dy of [-half, half]) corners.push(onScreen(pose, [x + dx, y + dy, z + TILE_HOVER.forward], aspect));
+          }
+          const xs = corners.map(([x]) => x);
+          const ys = corners.map(([, y]) => y);
+          const where = `${count} tiles, t=${t}, ${aspect.toFixed(2)}`;
+          expect(Math.max(...xs.map(Math.abs)), where).toBeLessThan(0.9);
+          expect(Math.min(...ys), where).toBeGreaterThan(-0.88);
+          // The title and the tile hint sit across the top of the screen, a few lines deep on a narrow one.
+          expect(Math.max(...ys), where).toBeLessThan(aspect < 1 ? 0.25 : 0.45);
+          // The bulb's glare never lands on them: it hangs above the frame, its light falling on the wall.
+          expect(onScreen(pose, [0, BULB_Y, 0], aspect)[1], where).toBeGreaterThan(1.05);
+        }
+      }
+    }
+  });
+
+  it('over the stack the bulb glints in the glaze along the top edge of every tile, well clear of the name across its middle', () => {
+    for (const [count, aspect] of [content.stack.length, 12, 20].flatMap((n) => [16 / 9, 375 / 812].map((a) => [n, a]))) {
+      const size = TILE.size * tileScale(count, aspect);
+      for (const t of [TILES_UP_T, 0.8, 0.9]) {
+        const eye = new Vector3(...cameraPoseAt(chapterP('stack', t), 6).position);
+        for (let i = 0; i < count; i++) {
+          const { position, rotation } = tileSlot(i, count, aspect);
+          const turn = new Euler(...rotation);
+          const face = new Vector3(0, 0, 1).applyEuler(turn);
+          const up = new Vector3(0, 1, 0).applyEuler(turn);
+          // Up the tile's middle, from its bottom edge to past its top: where the camera sees the bulb in it.
+          let glint = { off: Infinity, along: 0 };
+          for (let along = -0.5; along <= 0.8; along += 0.01) {
+            const at = new Vector3(...position).addScaledVector(up, along * size);
+            const seen = at.clone().sub(eye).normalize().reflect(face);
+            const off = seen.angleTo(new Vector3(0, BULB_Y, 0).sub(at).normalize());
+            if (off < glint.off) glint = { off, along };
+          }
+          const where = `${count} tiles, tile ${i}, t=${t}, ${aspect.toFixed(2)}`;
+          expect((glint.off * 180) / Math.PI, where).toBeLessThan(8);
+          expect(glint.along, where).toBeGreaterThan(0.3);
+          expect(glint.along, where).toBeLessThan(0.6);
+        }
+      }
+    }
+  });
+
+  it('on a phone the tapes stand in one column, all in the frame under the tagline, a picked one slid out too', () => {
+    for (const aspect of [375 / 812, 390 / 844, 360 / 800]) {
+      expect(tapeLayout(aspect)).toBe('column');
+      for (const t of [0.5, 0.65, 0.9]) {
+        const pose = cameraPoseAt(chapterP('contact', t), 6);
+        const sleeves: [number, number][] = [];
+        const reach: [number, number][] = [];
+        for (let i = 0; i < 4; i++) {
+          const { position, side } = cassettePose(i, 4, t, 0, 'column');
+          const [x, y, z] = position;
+          for (const dy of [-CASSETTE_HALF_HEIGHT, CASSETTE_HALF_HEIGHT]) {
+            for (const dx of [-CASSETTE_WIDTH / 2, CASSETTE_WIDTH / 2]) sleeves.push(onScreen(pose, [x + dx, y + dy, z], aspect));
+          }
+          const g = HOVER.grow;
+          const front = z + HOVER.forward;
+          for (const dy of [-CASSETTE_HALF_HEIGHT * g, CASSETTE_HALF_HEIGHT * g]) {
+            reach.push(onScreen(pose, [x - side * (CASSETTE_WIDTH / 2) * g, y + dy, front], aspect));
+            reach.push(onScreen(pose, [x + side * (CASSETTE_WIDTH / 2 + CASSETTE_REACH) * g, y + dy, front], aspect));
+          }
+        }
+        const where = `t=${t}, ${aspect.toFixed(2)}`;
+        expect(Math.max(...[...sleeves, ...reach].map(([x]) => Math.abs(x))), where).toBeLessThan(0.92);
+        expect(Math.min(...[...sleeves, ...reach].map(([, y]) => y)), where).toBeGreaterThan(-0.88);
+        // The tagline and the tape hint run a few lines deep across the top of a phone.
+        expect(Math.max(...[...sleeves, ...reach].map(([, y]) => y)), where).toBeLessThan(0.25);
+        // Still big enough to read the stickers: a sleeve over a third of the screen's width.
+        expect(sleeves[1][0] - sleeves[0][0], where).toBeGreaterThan(0.66);
+      }
+    }
+  });
+
   it('in the contact chapter the camera comes in close: the tapes fill most of the frame, all in it, clear of the title', () => {
     for (const t of [0.5, 0.65, 0.9]) {
       const pose = cameraPoseAt(chapterP('contact', t), 6);
@@ -82,13 +182,24 @@ describe('camera paths', () => {
         const [x, y, z] = position;
         for (const dy of [-CASSETTE_HALF_HEIGHT, CASSETTE_HALF_HEIGHT]) {
           for (const dx of [-CASSETTE_WIDTH / 2, CASSETTE_WIDTH / 2]) sleeves.push(onScreen(pose, [x + dx, y + dy, z]));
-          // The tape slid out of its sleeve on hover.
-          reach.push(onScreen(pose, [x + side * (CASSETTE_WIDTH / 2 + CASSETTE_REACH), y + dy, z]));
+        }
+        // Hovered: grown, come forward, squared up to the camera and slid out, on a 16:9 screen
+        // and on a laptop's 16:10, which is narrower for the same height.
+        const g = HOVER.grow;
+        const front = z + HOVER.forward;
+        for (const aspect of [16 / 9, 16 / 10]) {
+          for (const dy of [-CASSETTE_HALF_HEIGHT * g, CASSETTE_HALF_HEIGHT * g]) {
+            reach.push(onScreen(pose, [x - side * (CASSETTE_WIDTH / 2) * g, y + dy, front], aspect));
+            reach.push(onScreen(pose, [x + side * (CASSETTE_WIDTH / 2 + CASSETTE_REACH) * g, y + dy, front], aspect));
+          }
         }
       }
       const xs = sleeves.map(([x]) => x);
       const ys = sleeves.map(([, y]) => y);
-      expect(Math.max(...reach.map(([x]) => Math.abs(x))), `t=${t}`).toBeLessThan(0.97);
+      // No part of a hovered tape ever goes past the edge of the screen, the handheld sway included.
+      expect(Math.max(...reach.map(([x]) => Math.abs(x))), `t=${t}`).toBeLessThan(0.92);
+      expect(Math.min(...reach.map(([, y]) => y)), `t=${t}`).toBeGreaterThan(-0.92);
+      expect(Math.max(...reach.map(([, y]) => y)), `t=${t}`).toBeLessThan(0.62);
       expect(Math.min(...ys), `t=${t}`).toBeGreaterThan(-0.9);
       // The chapter's title and the tape hint sit across the top of the screen.
       expect(Math.max(...ys), `t=${t}`).toBeLessThan(0.62);
@@ -145,11 +256,12 @@ describe('camera paths', () => {
   });
 
   it('where the camera turns back it slows to a stop there, never swinging past the keyframe', () => {
-    // As the contact starts it reaches (3, -177, 3) and heads back toward (0, -178.5, 7).
-    for (let p = chapterP('stack', 0.4); p < chapterP('contact', 0.8); p += 0.002) {
-      const [x, y] = cameraPoseAt(p, 6).position;
-      expect(x, `p=${p}`).toBeLessThanOrEqual(3 + 1e-9);
-      expect(y, `p=${p}`).toBeLessThanOrEqual(-177 + 1e-9);
+    // Once down in front of the wall it stays under the bulb, never closer than its last creep
+    // in, then backs away for the tapes.
+    for (let p = chapterP('stack', 0.55); p < chapterP('contact', 0.8); p += 0.002) {
+      const [, y, z] = cameraPoseAt(p, 6).position;
+      expect(y, `p=${p}`).toBeLessThanOrEqual(BULB_Y + 1e-9);
+      expect(z, `p=${p}`).toBeGreaterThanOrEqual(1.3 - 1e-9);
     }
   });
 
@@ -193,6 +305,26 @@ describe('camera paths', () => {
     expect(focusDistance({ position: [0, 0, 0], target: [3, 4, 0] })).toBe(5);
     const pose = cameraPoseAt(0.05, 6);
     expect(focusDistance(pose)).toBeCloseTo(distance(pose.position, pose.target), 10);
+  });
+
+  it('on a phone the lens pulls focus back onto the column of tapes, and lets it go again before the loop', () => {
+    const phone = 375 / 812;
+    for (const t of [0.5, 0.65, 0.9]) {
+      const p = chapterP('contact', t);
+      const pose = cameraPoseAt(p, 6);
+      const tapes = Array.from({ length: 4 }, (_, i) => cassettePose(i, 4, t, 0, 'column').position);
+      const nearest = Math.min(...tapes.map((tape) => distance(pose.position, tape)));
+      const furthest = Math.max(...tapes.map((tape) => distance(pose.position, tape)));
+      const focus = focusDistance(pose, tapeFocus(p, phone));
+      expect(focus, `t=${t}`).toBeGreaterThan(nearest - 0.1);
+      expect(focus, `t=${t}`).toBeLessThan(furthest + 0.1);
+      // On a wide screen the tapes are where the camera looks.
+      expect(focusDistance(pose, tapeFocus(p, 16 / 9)), `t=${t}`).toBe(focusDistance(pose));
+    }
+    // No pull at the chapter's edges, so the focus never jumps there.
+    for (const p of [getChapter('contact').start, getChapter('contact').end - 1e-9, chapterP('stack', 0.9)]) {
+      expect(focusDistance(cameraPoseAt(p, 6), tapeFocus(p, phone)), `p=${p}`).toBeCloseTo(focusDistance(cameraPoseAt(p, 6)), 3);
+    }
   });
 
   it('the lens never focuses closer than half a metre', () => {

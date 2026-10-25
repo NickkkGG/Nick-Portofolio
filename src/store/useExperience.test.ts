@@ -5,7 +5,7 @@ import { getChapter } from '@/timeline/chapters';
 import { BOUNDARY_SPIKE } from '@/timeline/transitions';
 
 const FALL = getChapter('fall').start;
-const IDEAS = getChapter('problem').start;
+const STACK = getChapter('stack').start;
 
 const store = () => useExperience.getState();
 
@@ -65,8 +65,8 @@ describe('experience store', () => {
     store().setScroll(FALL + 0.001);
     expect(store().vhsSpike).toBe(0.9);
     useExperience.setState({ vhsSpike: 0 });
-    store().setScroll(IDEAS - 0.001);
-    store().setScroll(IDEAS + 0.001);
+    store().setScroll(STACK - 0.001);
+    store().setScroll(STACK + 0.001);
     expect(store().vhsSpike).toBe(BOUNDARY_SPIKE);
   });
 

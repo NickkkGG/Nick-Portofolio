@@ -1,5 +1,5 @@
 import { BEAM_OUT_T, PROJECTOR_ON_T, SHEET_DROP_T, slideAt } from '@/experience/chapters/booth/slides';
-import { bulbIntensity, dripRipples } from '@/experience/chapters/depths/choreography';
+import { BULB_LIGHTS_T, dripRipples } from '@/experience/chapters/depths/choreography';
 import { DUST } from '@/experience/chapters/fall/dust';
 import { lampNervousness, roomT } from '@/experience/chapters/room/knock';
 import { focusedIndex } from '@/experience/chapters/spiral/helix';
@@ -19,6 +19,7 @@ export type Cue =
   | 'channel'
   | 'seam'
   | 'bulb'
+  | 'tiles'
   | 'tapes'
   | 'tune';
 
@@ -28,10 +29,12 @@ const within = (id: ChapterId, t: number) => {
 };
 /** The falling figure starts to crumble to dust (fall/dust.ts). */
 const DUST_P = within('fall', DUST.start);
-/** The bulb catches as it starts to glow (choreography.ts lights it over problem t 0.6-0.8). */
-const BULB_P = within('problem', 0.62);
-/** The first tape is halfway up out of the water (cassettePose). */
-const TAPES_P = within('contact', 0.07);
+/** The bulb catches as it starts to glow, once the camera is down off the pillar (choreography.ts). */
+const BULB_P = within('stack', BULB_LIGHTS_T);
+/** The first tiles touch into the wall behind it (choreography.ts tileState). */
+const TILES_P = within('stack', 0.4);
+/** The first tape breaks the water under the bulb (cassettePose). */
+const TAPES_P = within('contact', 0.12);
 /** In the booth (booth/slides.ts): the lamp catching, the rope snapping, the beam reaching the first monitor. */
 const PROJECTOR_P = within('about', PROJECTOR_ON_T);
 const SHEET_P = within('about', SHEET_DROP_T);
@@ -75,6 +78,7 @@ export function scrollCues(prevP: number, p: number, programmatic: boolean, proj
   if (passes(prevP, p, BEAM_P)) cues.push('tune');
   if (passes(prevP, p, LOOP_TELEPORT_P)) cues.push('seam');
   if (passes(prevP, p, BULB_P)) cues.push('bulb');
+  if (passes(prevP, p, TILES_P)) cues.push('tiles');
   if (passes(prevP, p, TAPES_P)) cues.push('tapes');
   if (!changed && after.chapterId === 'spiral' && focusedIndex(before.t, projects) !== focusedIndex(after.t, projects)) cues.push('tune');
   return cues;
@@ -88,26 +92,8 @@ export function dripsBetween(from: number, to: number): { x: number; z: number; 
     .map(({ x, z, age }) => ({ x, z, at: to - age }));
 }
 
-function hash(n: number, salt: number): number {
-  const s = Math.sin(n * 91.7 + salt * 47.3) * 24634.6345;
-  return s - Math.floor(s);
-}
-
-const GLITCH_SLOT = 1.6;
-
-/** When the problems in the dark glitch, after `from` and by `to`: most slots of 1.6 s, at an uneven moment in each. */
-export function glitchesBetween(from: number, to: number): number[] {
-  const times: number[] = [];
-  for (let k = Math.floor(from / GLITCH_SLOT); k <= Math.floor(to / GLITCH_SLOT); k++) {
-    if (hash(k, 1) > 0.7) continue;
-    const time = (k + hash(k, 2)) * GLITCH_SLOT;
-    if (time > from && time <= to) times.push(time);
-  }
-  return times;
-}
-
 export interface Ambient {
-  name: 'crackle' | 'drip' | 'glitch';
+  name: 'crackle' | 'drip';
   /** The scene time it belongs to. */
   at: number;
   /** -1 (left) .. 1 (right). */
@@ -120,8 +106,8 @@ const MAX_STEP = 0.25;
 
 /**
  * The sounds of the place from scene time `from` to `to`, at progress `p`: the room's lamp
- * crackling each time it dips (flicker.ts, the knocks' stutter included), the problems
- * glitching in the dark until the bulb lights, and drips below the pillar.
+ * crackling each time it dips (flicker.ts, the knocks' stutter included), and drips below
+ * the pillar.
  */
 export function ambientSounds(p: number, from: number, to: number, knocks: readonly number[]): Ambient[] {
   if (to <= from || to - from > MAX_STEP) return [];
@@ -131,10 +117,7 @@ export function ambientSounds(p: number, from: number, to: number, knocks: reado
     const nervous = lampNervousness(roomT(p));
     for (const at of flickerDips(from, to, { nervous, knocks })) sounds.push({ name: 'crackle', at, pan: 0, level: 0.5 + 0.5 * nervous });
   }
-  if (chapterId === 'problem' && bulbIntensity(p) < 1) {
-    for (const at of glitchesBetween(from, to)) sounds.push({ name: 'glitch', at, pan: 0.7 * Math.sin(at * 12.9898), level: 0.8 });
-  }
-  if (chapterId === 'problem' || chapterId === 'stack' || chapterId === 'contact') {
+  if (chapterId === 'stack' || chapterId === 'contact') {
     for (const { x, z, at } of dripsBetween(from, to)) {
       sounds.push({ name: 'drip', at, pan: Math.max(-1, Math.min(1, x / 6.2)), level: 1 / (1 + 0.25 * Math.hypot(x, z)) });
     }

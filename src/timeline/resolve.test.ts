@@ -15,7 +15,7 @@ describe('timeline', () => {
   });
 
   it('the story introduces its owner between the fall and the work', () => {
-    expect(CHAPTERS.map((c) => c.id)).toEqual(['room', 'fall', 'about', 'spiral', 'problem', 'stack', 'contact', 'loop']);
+    expect(CHAPTERS.map((c) => c.id)).toEqual(['room', 'fall', 'about', 'spiral', 'stack', 'contact', 'loop']);
   });
 
   it('codes and labels match the spec', () => {
@@ -24,17 +24,18 @@ describe('timeline', () => {
     expect(osd('fall')).toBe('CH-02 / FALL');
     expect(osd('about')).toBe('CH-03 / ABOUT');
     expect(osd('spiral')).toBe('CH-04 / WORK');
-    expect(osd('problem')).toBe('CH-05 / IDEAS');
-    expect(osd('contact')).toBe('CH-07 / CONTACT');
-    expect(osd('loop')).toBe('CH-08 / LOOP');
+    expect(osd('stack')).toBe('CH-05 / STACK');
+    expect(osd('contact')).toBe('CH-06 / CONTACT');
+    expect(osd('loop')).toBe('CH-07 / LOOP');
   });
 
-  it('one loop is 17 screens: the room and the work keep their length, the fall is shorter', () => {
-    expect(LOOP_LENGTH_VH).toBe(1700);
+  it('one loop is 15.6 screens, two of them for the wall of tools', () => {
+    expect(LOOP_LENGTH_VH).toBe(1560);
     expect(screens('room')).toBeCloseTo(1.4);
     expect(screens('fall')).toBeCloseTo(1.7);
     expect(screens('about')).toBeCloseTo(4);
     expect(screens('spiral')).toBeCloseTo(4.2);
+    expect(screens('stack')).toBeCloseTo(2);
   });
 
   it('resolve is end-exclusive', () => {
@@ -87,6 +88,6 @@ describe('timeline', () => {
   });
 
   it('chapterStartP', () => {
-    expect(chapterStartP('about')).toBeCloseTo(3.1 / 17);
+    expect(chapterStartP('about')).toBeCloseTo(3.1 / 15.6);
   });
 });

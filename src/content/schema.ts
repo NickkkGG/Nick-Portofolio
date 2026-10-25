@@ -6,6 +6,8 @@ export const siteSchema = z.object({
   greeting: z.string().min(1),
   role: z.string().min(1),
   tagline: z.string().min(1),
+  /** The line over the tiles in the stack chapter. */
+  stackTitle: z.string().min(1),
 });
 
 const projectBase = {
@@ -52,16 +54,26 @@ export const slideSchema = z.object({
 export const aboutSchema = z.object({
   /** The projector's slides, one per step of scroll: who, how, and what next (spec: the booth). */
   slides: z.array(slideSchema).min(1).max(8, 'the booth holds at most eight slides'),
-  /** The line the bulb lights up in IDEAS. */
+  /** The site's motto: the page's description for search engines and link previews. */
   motto: z.string().min(1),
 });
 
-export const stackSchema = z.array(
-  z.object({
-    name: z.string().min(1),
-    category: z.string().min(1),
-  }),
-);
+/** The tools, one glazed tile each (stack/Tiles.tsx). */
+export const stackSchema = z
+  .array(
+    z.object({
+      name: z.string().min(1),
+      /** Its mark on the tile: a Simple Icons slug (content/logos.ts); without one the tile carries the name. */
+      logo: z
+        .string()
+        .regex(/^[a-z0-9]+$/)
+        .optional(),
+      /** A few words shown while the tile is picked: where it was used. */
+      note: z.string().min(1).optional(),
+    }),
+  )
+  .min(1)
+  .max(24, 'the wall holds at most 24 tiles');
 
 export const contactSchema = z.array(
   z.object({

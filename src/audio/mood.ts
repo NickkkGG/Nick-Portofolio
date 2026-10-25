@@ -27,15 +27,14 @@ const MOODS: Record<ChapterId, Mood> = {
   about: { tone: 2600, pad: 1200, notes: 0.1, pedal: 0.3, level: 0.85 },
   // The projects: brighter, the melody wanders between the monitors.
   spiral: { tone: 3800, pad: 1800, notes: 0.26, pedal: 0, level: 1 },
-  // The problems circling in the dark: muffled and tense until the bulb lights (see moodAt).
-  problem: { tone: 1900, pad: 850, notes: 0.06, pedal: 1, level: 0.9 },
+  // The tools as tiles under the bulb, once it is lit (see moodAt).
   stack: { tone: 3600, pad: 1650, notes: 0.24, pedal: 0, level: 1 },
   contact: { tone: 3400, pad: 1500, notes: 0.18, pedal: 0, level: 1 },
   loop: { tone: 2300, pad: 1100, notes: 0.05, pedal: 0.5, level: 1 },
 };
 
-/** Once the idea's bulb is lit, the problem chapter sounds like the chapters after it. */
-const LIT = MOODS.stack;
+/** Down off the pillar in the dark before the bulb lights: muffled and tense. */
+const DARK: Mood = { tone: 1900, pad: 850, notes: 0.06, pedal: 1, level: 0.9 };
 
 function mix(a: Mood, b: Mood, k: number): Mood {
   return {
@@ -51,7 +50,7 @@ function mix(a: Mood, b: Mood, k: number): Mood {
 export function moodAt(p: number): Mood {
   const { chapter, t } = resolve(p);
   const mood = MOODS[chapter.id];
-  if (chapter.id === 'problem') return mix(mood, LIT, bulbIntensity(p) / 3);
+  if (chapter.id === 'stack') return mix(DARK, mood, bulbIntensity(p) / 3);
   if (chapter.id !== 'loop') return mood;
   // It sinks with the picture into the blackout, then drifts back to the room's sound as the
   // camera comes down into it, so the loop seam sounds the same on both sides.

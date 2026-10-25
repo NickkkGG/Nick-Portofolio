@@ -50,8 +50,8 @@ const PANES: Partial<Record<ChapterId, { strength: number; before: number; after
   about: { strength: 0.75, before: 0.1, after: 0.34 },
   // Out through the booth window the camera never cuts: the glass only brushes the picture.
   spiral: { strength: 0.3, before: 0.2, after: 0.2 },
-  problem: { strength: 1, before: 0.28, after: 0.28 },
-  stack: { strength: 0.55, before: 0.2, after: 0.2 },
+  // Off the last monitor and all the way down to the flooded floor: the thickest glass.
+  stack: { strength: 1, before: 0.28, after: 0.28 },
   contact: { strength: 0.55, before: 0.2, after: 0.2 },
   loop: { strength: 0.7, before: 0.28, after: 0.28 },
 };

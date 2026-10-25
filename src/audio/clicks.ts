@@ -1,9 +1,9 @@
 import { audioContext, noiseBuffer } from './context';
 
 /**
- * Small synthesised sounds for the last chapters (no samples to license): a mechanical
- * key going down and coming back up, and a VHS tape sliding in its card sleeve. Audio
- * failing must never break the page.
+ * Small synthesised sounds for the last chapters (no samples to license): a glazed tile
+ * ringing as it is touched, a VHS tape sliding in its card sleeve, and the camcorder's pip
+ * as it locks focus. Audio failing must never break the page.
  */
 function burst(ctx: AudioContext, at: number, seconds: number, frequency: number, q: number, gain: number, out: AudioNode = ctx.destination) {
   const source = ctx.createBufferSource();
@@ -34,18 +34,20 @@ function thock(ctx: AudioContext, at: number, from: number, to: number, seconds:
   tone.stop(at + seconds + 0.02);
 }
 
-/** A key bottoming out (`down`), or springing back up. */
-export function playKeyClick(down: boolean): void {
+/**
+ * A glazed tile touched (`index` tunes it a little, so no two ring quite alike): the click of
+ * a fingernail on glaze, then the plate ringing in its own few, unrelated tones.
+ */
+export function playTileTink(index: number): void {
   try {
     const ctx = audioContext();
     if (!ctx) return;
     const now = ctx.currentTime + 0.005;
-    if (down) {
-      burst(ctx, now, 0.025, 3800 + Math.random() * 600, 2.2, 0.35);
-      thock(ctx, now, 210, 120, 0.06, 0.4);
-    } else {
-      burst(ctx, now, 0.018, 4600 + Math.random() * 600, 2.8, 0.18);
-    }
+    const f = 1850 * (1 + 0.035 * ((index % 5) - 2));
+    burst(ctx, now, 0.012, 5200, 2, 0.12);
+    thock(ctx, now, f, f, 0.2, 0.05);
+    thock(ctx, now, f * 2.32, f * 2.32, 0.12, 0.03);
+    thock(ctx, now, f * 4.25, f * 4.25, 0.07, 0.015);
   } catch {
     // Silence is fine.
   }
@@ -73,6 +75,19 @@ export function playTapeClunk(): void {
     thock(ctx, now, 140, 60, 0.18, 0.6);
     burst(ctx, now, 0.05, 1800, 1.5, 0.3);
     burst(ctx, now + 0.09, 0.04, 3200, 2.5, 0.2);
+  } catch {
+    // Silence is fine.
+  }
+}
+
+/** The camcorder locking focus on a picked tile or tape: pi-pip, as its brackets close on it (ui/FocusBrackets.tsx). */
+export function playFocusLock(): void {
+  try {
+    const ctx = audioContext();
+    if (!ctx) return;
+    const at = ctx.currentTime + 0.17;
+    thock(ctx, at, 2900, 2900, 0.05, 0.04);
+    thock(ctx, at + 0.08, 2900, 2900, 0.05, 0.04);
   } catch {
     // Silence is fine.
   }

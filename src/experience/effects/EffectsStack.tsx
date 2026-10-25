@@ -5,6 +5,7 @@ import { useRef } from 'react';
 import { useExperience } from '@/store/useExperience';
 import { atmosphereAt } from '@/experience/atmosphere/atmosphere';
 import { focusDistance } from '@/experience/camera/paths';
+import { tapeFocus } from '@/experience/chapters/depths/choreography';
 import { fadeAt } from '@/timeline/loop';
 import { glassAt } from '@/timeline/transitions';
 import { Glass, type GlassEffect } from './GlassEffect';
@@ -16,9 +17,9 @@ export function EffectsStack() {
   const dof = useRef<DepthOfFieldEffect>(null);
   const glass = useRef<GlassEffect>(null);
 
-  useFrame(() => {
+  useFrame(({ size }) => {
     const { time, vhsBase, vhsSpike, p, cameraPose } = useExperience.getState();
-    if (dof.current && cameraPose) dof.current.cocMaterial.focusDistance = focusDistance(cameraPose);
+    if (dof.current && cameraPose) dof.current.cocMaterial.focusDistance = focusDistance(cameraPose, tapeFocus(p, size.width / size.height));
     if (glass.current) {
       const pane = glassAt(p);
       glass.current.uniforms.get('uAmount')!.value = pane.amount;

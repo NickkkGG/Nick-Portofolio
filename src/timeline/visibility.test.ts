@@ -12,8 +12,9 @@ describe('visibility', () => {
     expect(isVisible('room', 0.5)).toBe(false);
   });
 
-  it('depths stays lit from the ideas to the teleport', () => {
-    expect(isVisible('depths', chapterP('problem', 0.2))).toBe(true);
+  it('depths stays lit from the stack to the teleport', () => {
+    expect(isVisible('depths', chapterP('stack', 0.02))).toBe(true);
+    expect(isVisible('depths', chapterP('spiral', 0.5))).toBe(false);
     expect(isVisible('depths', chapterP('contact', 0.9))).toBe(true);
     expect(isVisible('depths', LOOP_TELEPORT_P + 0.005)).toBe(false);
   });

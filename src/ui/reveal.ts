@@ -18,9 +18,10 @@ const w = (inStart: number, inEnd: number, outStart: number, outEnd: number): Re
 export const TEXT_WINDOWS = {
   roomIntro: w(0, 0, 0.55, 0.75),
   spiralProject: w(0.1, 0.16, 0.94, 1),
-  // As the bulb lights (depths/choreography.ts bulbIntensity), and up for the rest of the chapter.
-  ideasMotto: w(0.6, 0.68, 0.95, 1),
-  stackList: w(0.05, 0.4, 0.9, 1),
+  // Once the camera is down past the bulb, so its glare is up out of the frame, as the last tiles
+  // come into the wall (depths/choreography.ts TILES_UP_T), and up to the end.
+  stackTitle: w(0.5, 0.62, 0.93, 1),
+  stackHint: w(0.56, 0.66, 0.93, 1),
   contactTagline: w(0.2, 0.45, 0.92, 1),
   contactHint: w(0.3, 0.45, 0.92, 1),
 } satisfies Record<string, RevealWindow>;

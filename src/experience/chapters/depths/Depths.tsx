@@ -1,7 +1,6 @@
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useMemo, useRef } from 'react';
 import {
-  CanvasTexture,
   Color,
   Group,
   type HemisphereLight,
@@ -16,12 +15,11 @@ import {
 import { MODELS, useModel } from '@/experience/assets';
 import { LightShaft } from '@/experience/atmosphere/LightShaft';
 import { surgeLevel } from '@/experience/chapters/spiral/motion';
-import { Character } from '@/experience/character/Character';
-import { depthsMix } from '@/experience/character/poses';
 import { createStaticScreens } from '@/experience/materials/staticScreens';
 import { useExperience } from '@/store/useExperience';
 import { useChapterFrame } from '../useChapterFrame';
-import { BULB_Y, bulbDrop, bulbIntensity, dripRipples, FLOOR_Y, SEAT_TOP } from './choreography';
+import { BULB_Y, bulbDrop, bulbHaze, bulbIntensity, dripRipples, FLOOR_Y } from './choreography';
+import { mergeRipples, tapeSplashes } from './splashes';
 import { WetFloor } from './wetFloor';
 
 const WIRE = 6;
@@ -47,33 +45,14 @@ function filamentShimmer(time: number): number {
   return 0.93 + 0.05 * Math.sin(time * 23) * Math.sin(time * 7.3) + 0.02 * Math.sin(time * 61);
 }
 
-/** A soft round shadow for things standing in the water, which no light here casts. */
-function contactShadow(): CanvasTexture {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 128;
-  const ctx = canvas.getContext('2d');
-  if (ctx) {
-    const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-    g.addColorStop(0, 'rgba(0,0,0,0.85)');
-    g.addColorStop(0.45, 'rgba(0,0,0,0.45)');
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 128, 128);
-  }
-  return new CanvasTexture(canvas);
-}
-
 /** The flooded floor's parts, taken from depths.glb and given their live materials. */
 class DepthsKit {
   readonly floor: Mesh;
   readonly props = new Group();
   readonly bulb = new Group();
-  readonly seat: Object3D;
-  readonly shadow = contactShadow();
   private readonly water: WetFloor;
   private readonly glass = new MeshStandardMaterial({ color: '#2a2016', emissive: WARM, emissiveIntensity: 0, roughness: 0.12, transparent: true, opacity: 0.88 });
   private readonly filament = new MeshBasicMaterial({ color: '#000000', toneMapped: false });
-  private readonly deadGlass = new MeshStandardMaterial({ color: '#0d1312', roughness: 0.1, metalness: 0.3 });
   private readonly screens = createStaticScreens();
 
   constructor(scene: Group) {
@@ -93,13 +72,6 @@ class DepthsKit {
         this.bulb.add(copy);
       }
     }
-
-    // The seat: one more beige CRT, true size, dead, lying on its side.
-    this.seat = this.withScreen((scene.getObjectByName('Depths_Crt_0') ?? new Group()).clone(), this.deadGlass);
-    this.seat.scale.setScalar(1);
-    // Three-quarters to the camera: the beige casing reads, the dead screen looks off to the side.
-    this.seat.rotation.set(0, 1.05, Math.PI / 2);
-    this.seat.position.set(0, SEAT_TOP - 0.23, 0);
   }
 
   private withScreen(object: Object3D, screen: Material): Object3D {
@@ -118,16 +90,16 @@ class DepthsKit {
     this.screens.uniforms.uSurge.value = surgeLevel(time) * 0.6;
     // The sunken sets never quite die: each keeps a faint picture glowing in the water.
     this.screens.uniforms.uFloor.value = 0.3;
-    this.water.update(time, dripRipples(time), MIRROR);
+    // Drips from far above, and rings where the tapes come up through the water (contact/Cassettes.tsx).
+    this.water.update(time, mergeRipples(dripRipples(time), tapeSplashes.ripples(time)), MIRROR);
   }
 
   dispose() {
     this.water.dispose();
-    this.shadow.dispose();
   }
 }
 
-/** The flooded floor under the pillar (spec §3.7-3.9): wet concrete, debris, dead TVs, the seat and the bulb. */
+/** The flooded floor under the pillar (spec §3.7-3.9): wet concrete, debris, dead TVs and the bulb. Nobody down here. */
 export function Depths() {
   const ref = useRef<Group>(null);
   const lamp = useRef<Group>(null);
@@ -175,19 +147,6 @@ export function Depths() {
       ))}
       <primitive object={kit.floor} />
       <primitive object={kit.props} />
-      <primitive object={kit.seat} />
-      <mesh position={[0, FLOOR_Y + 0.004, 0.2]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={1}>
-        <planeGeometry args={[1.6, 1.6]} />
-        <meshBasicMaterial map={kit.shadow} transparent depthWrite={false} color="#000000" />
-      </mesh>
-      {/* Hunched on the dead TV, up with the idea, among the tapes after (character/poses.ts). */}
-      <Character
-        position={[0, FLOOR_Y, 0]}
-        pose={() => {
-          const { p, time } = useExperience.getState();
-          return depthsMix(p, time);
-        }}
-      />
       {/* Everything below hangs from the top of the cord, so it swings as one. */}
       <group ref={lamp} position={[0, BULB_Y + WIRE, 0]}>
         <group position={[0, -WIRE, 0]}>
@@ -203,7 +162,7 @@ export function Depths() {
             radiusEnd={2.3}
             color="#ffb35c"
             intensity={0}
-            intensityAt={(p) => 0.06 * bulbIntensity(p)}
+            intensityAt={(p) => 0.18 * bulbHaze(p)}
             fadeIn={0.3}
           />
         </group>

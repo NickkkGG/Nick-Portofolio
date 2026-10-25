@@ -26,7 +26,7 @@ describe('spacing the sounds', () => {
 
 describe('the voices', () => {
   it('every sound the story logs has a voice, except the knock, which plays in the room itself', () => {
-    for (const name of ['power-on', 'floor-break', 'dust', 'landing', 'channel', 'seam', 'bulb', 'tapes', 'tune']) expect(isSfx(name), name).toBe(true);
+    for (const name of ['power-on', 'floor-break', 'dust', 'landing', 'channel', 'seam', 'bulb', 'tiles', 'tapes', 'tune']) expect(isSfx(name), name).toBe(true);
     expect(isSfx('knock')).toBe(false);
     expect(isSfx('toString')).toBe(false);
   });

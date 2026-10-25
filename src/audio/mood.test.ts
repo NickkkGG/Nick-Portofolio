@@ -20,9 +20,9 @@ describe('the soundtrack mood', () => {
     }
   });
 
-  it('is muffled and tense while the problems circle, and opens once the bulb lights', () => {
-    const dark = moodAt(at('problem', 0.3));
-    const lit = moodAt(at('problem', 0.9));
+  it('is muffled and tense coming down off the pillar in the dark, and opens once the bulb lights', () => {
+    const dark = moodAt(at('stack', 0.06));
+    const lit = moodAt(at('stack', 0.5));
     expect(dark.tone).toBeLessThan(lit.tone);
     expect(dark.notes).toBeLessThan(lit.notes);
     expect(dark.pedal).toBeGreaterThan(lit.pedal);

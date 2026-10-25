@@ -7,7 +7,7 @@ import type { Cue } from './cues';
  * ticking in off the tape. Every voice takes any audio context, so it can also be rendered
  * offline to listen to. Audio failing must never break the page.
  */
-export type Sfx = Cue | 'drip' | 'tick' | 'hover' | 'toggle' | 'crackle' | 'glitch';
+export type Sfx = Cue | 'drip' | 'tick' | 'hover' | 'toggle' | 'crackle';
 
 export interface SfxOptions {
   /** -1 (left) .. 1 (right). */
@@ -434,32 +434,29 @@ function crackle(ctx: BaseAudioContext, { dry }: Out, at: number) {
     .connect(dry);
 }
 
-const GLITCH_NOTES = [80, 160, 320, 640, 1280, 2560];
-
-/** A crashed window tearing: a square wave jumping between notes, cut up, with noise in the cuts. */
-function glitch(ctx: BaseAudioContext, { dry }: Out, at: number) {
-  const seconds = rand(0.09, 0.22);
-  const osc = tone(ctx, 'square', at, at + seconds, 320);
-  const gate = new GainNode(ctx, { gain: 0 });
-  const cuts = new GainNode(ctx, { gain: 0 });
-  for (let t = 0; t < seconds; t += rand(0.012, 0.025)) {
-    osc.frequency.setValueAtTime(pick(GLITCH_NOTES) * rand(0.9, 1.1), at + t);
-    const on = Math.random() < 0.7;
-    gate.gain.setValueAtTime(on ? 1 : 0, at + t);
-    cuts.gain.setValueAtTime(on ? 0 : 1, at + t);
+/**
+ * The tiles coming into the wall one after another: a glazed clink each, a fingernail's click
+ * and a few unrelated ringing tones, every one tuned a little differently, the later ones
+ * further off in the echo.
+ */
+function tiles(ctx: BaseAudioContext, out: Out, at: number) {
+  let when = at;
+  for (let i = 0; i < 12; i++) {
+    when += rand(0.05, 0.13);
+    const f = rand(1600, 2400);
+    const peak = rand(0.05, 0.09) * (1 - i / 18);
+    const into = i % 3 === 2 ? out.wet : out.dry;
+    burst(ctx, into, when, 0.008, 5200, 2, peak * 1.5);
+    for (const [ratio, decay, share] of [
+      [1, 0.18, 1],
+      [2.32, 0.11, 0.6],
+      [4.25, 0.06, 0.3],
+    ] as const) {
+      tone(ctx, 'sine', when, when + decay + 0.03, f * ratio)
+        .connect(envelope(ctx, when, peak * share, 0.002, decay))
+        .connect(into);
+    }
   }
-  gate.gain.setValueAtTime(0, at + seconds);
-  cuts.gain.setValueAtTime(0, at + seconds);
-  osc
-    .connect(highpass(ctx, 120))
-    .connect(gate)
-    .connect(new GainNode(ctx, { gain: 0.06 }))
-    .connect(dry);
-  noise(ctx, at, seconds)
-    .connect(band(ctx, rand(1500, 4000), 1))
-    .connect(cuts)
-    .connect(new GainNode(ctx, { gain: 0.08 }))
-    .connect(dry);
 }
 
 const VOICES: Record<Sfx, Voice> = {
@@ -473,6 +470,7 @@ const VOICES: Record<Sfx, Voice> = {
   channel,
   seam,
   bulb,
+  tiles,
   tapes,
   tune,
   drip: (ctx, out, at) => drop(ctx, out, at, 1),
@@ -480,7 +478,6 @@ const VOICES: Record<Sfx, Voice> = {
   hover,
   toggle,
   crackle,
-  glitch,
 };
 
 export const isSfx = (name: string): name is Sfx => Object.hasOwn(VOICES, name);
@@ -497,6 +494,7 @@ const MIX: Record<Sfx, number> = {
   channel: 1.25,
   seam: 1,
   bulb: 1,
+  tiles: 1.6,
   tapes: 2.5,
   tune: 2,
   drip: 2,
@@ -504,7 +502,6 @@ const MIX: Record<Sfx, number> = {
   hover: 1.8,
   toggle: 1,
   crackle: 2.5,
-  glitch: 1,
 };
 
 /**
@@ -522,6 +519,7 @@ const SPACING: Record<Sfx, number> = {
   channel: 0.15,
   seam: 1,
   bulb: 0.8,
+  tiles: 1.5,
   tapes: 1.5,
   tune: 0.12,
   drip: 0.05,
@@ -529,7 +527,6 @@ const SPACING: Record<Sfx, number> = {
   hover: 0.05,
   toggle: 0.05,
   crackle: 0.05,
-  glitch: 0.08,
 };
 
 export class Spacer {

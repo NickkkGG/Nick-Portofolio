@@ -3,10 +3,9 @@ import { Cassettes } from './contact/Cassettes';
 import { Depths } from './depths/Depths';
 import { Fall } from './fall/Fall';
 import { LoopRoof } from './loop/LoopRoof';
-import { Problem } from './problem/Problem';
 import { Room } from './room/Room';
 import { Spiral } from './spiral/Spiral';
-import { Keycaps } from './stack/Keycaps';
+import { Tiles } from './stack/Tiles';
 
 export function Chapters() {
   return (
@@ -16,8 +15,7 @@ export function Chapters() {
       <Booth />
       <Spiral />
       <Depths />
-      <Problem />
-      <Keycaps />
+      <Tiles />
       <Cassettes />
       <LoopRoof />
     </>

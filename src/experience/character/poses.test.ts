@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getChapter } from '@/timeline/chapters';
 import { BEAM_OUT_T } from '@/experience/chapters/booth/slides';
-import { blendedOffset, boothMix, CLIPS, type ClipMix, depthsMix, looping, roomMix, scrubbed, STEP_FORWARD } from './poses';
+import { blendedOffset, boothMix, CLIPS, type ClipMix, looping, roomMix, scrubbed, STEP_FORWARD } from './poses';
 
 const at = (id: Parameters<typeof getChapter>[0], t: number) => {
   const c = getChapter(id);
@@ -24,25 +24,19 @@ describe('the character poses', () => {
     expect(scrubbed('StandUp', 1.4).time).toBeLessThan(CLIPS.StandUp);
   });
 
-  it('sits hunched through the problems, gets up with the idea and stands for the tapes', () => {
-    expect(only(depthsMix(at('problem', 0.5), 1))).toEqual(['SitHunched']);
-    expect(only(depthsMix(at('stack', 0.25), 1))).toEqual(['StandUp']);
-    expect(only(depthsMix(at('contact', 0.5), 1))).toEqual(['Stand']);
-    expect(only(depthsMix(at('loop', 0.2), 1))).toEqual(['Stand']);
-    for (let t = 0; t <= 1; t += 0.01) expect(total(depthsMix(at('stack', t), 2.3)), `stack ${t}`).toBeCloseTo(1, 9);
-  });
-
-  it('getting up ends a step forward, and standing carries on from there without a jump', () => {
-    // The rise's last frame stands over the feet; the standing clip plays from one step on.
-    const before = depthsMix(at('stack', 0.449), 1);
-    const after = depthsMix(at('stack', 0.451), 1);
-    expect(blendedOffset(before)[2]).toBeLessThan(blendedOffset(after)[2] + 1e-9);
-    expect(blendedOffset(depthsMix(at('contact', 0.5), 1))).toEqual(STEP_FORWARD);
-    expect(blendedOffset(depthsMix(at('problem', 0.5), 1))).toEqual([0, 0, 0]);
-  });
-
   it('in the booth the figure sits hunched on its crate through the slides', () => {
     for (const t of [0, 0.3, 0.8]) expect(only(boothMix(at('about', t), 1.2))).toEqual(['SitHunched']);
+  });
+
+  it('getting up blends whole from sitting to standing, and the step forward never jumps back', () => {
+    // The rise's last frame stands over the feet; the standing clip plays from one step on.
+    let last = 0;
+    for (let t = BEAM_OUT_T - 0.02; t <= 1; t += 0.002) {
+      const mix = boothMix(at('about', t), 2.3);
+      expect(total(mix), `about ${t}`).toBeCloseTo(1, 9);
+      expect(blendedOffset(mix)[2], `about ${t}`).toBeGreaterThanOrEqual(last - 1e-9);
+      last = blendedOffset(mix)[2];
+    }
   });
 
   it('it gets up once the sheet is down, and ends a step forward at the window', () => {
