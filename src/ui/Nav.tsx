@@ -35,7 +35,7 @@ function NavButton({ label, chapter }: { label: string; chapter: ChapterId }) {
 
 export function Nav() {
   return (
-    <nav data-overlay-item className="pointer-events-auto flex gap-6 text-xl tracking-widest">
+    <nav data-overlay-item className="pointer-events-auto flex gap-6 text-xl tracking-widest max-sm:gap-4">
       {LINKS.map(({ label, chapter }) => (
         <NavButton key={label} label={label} chapter={chapter} />
       ))}

@@ -30,17 +30,20 @@ export function Osd() {
 
   return (
     <div className="font-osd text-osd">
-      <div data-overlay-item className="absolute left-6 top-5 flex items-center gap-4 text-2xl tracking-widest">
-        <span data-testid="osd-rec">
-          <span className={recOn ? 'text-alarm' : 'text-transparent'}>●</span> REC
-        </span>
-        <span data-testid="osd-name" className="opacity-80">
-          {content.site.name}
-        </span>
-      </div>
-      <div className="absolute right-6 top-5 flex items-center gap-8">
-        <Nav />
-        <MusicToggle />
+      {/* REC on the left, nav and music on the right. A phone is too narrow for both: there they drop under REC. */}
+      <div className="absolute inset-x-6 top-5 flex items-start justify-between max-sm:inset-x-4 max-sm:top-4 max-sm:flex-col max-sm:gap-1">
+        <div data-overlay-item className="flex items-center gap-4 text-2xl tracking-widest">
+          <span data-testid="osd-rec">
+            <span className={recOn ? 'text-alarm' : 'text-transparent'}>●</span> REC
+          </span>
+          <span data-testid="osd-name" className="opacity-80">
+            {content.site.name}
+          </span>
+        </div>
+        <div className="flex items-center gap-8 max-sm:flex-wrap max-sm:justify-between max-sm:gap-4 max-sm:self-stretch">
+          <Nav />
+          <MusicToggle />
+        </div>
       </div>
       <div data-overlay-item data-testid="timecode" className="absolute bottom-5 left-6 text-2xl tracking-widest">
         {timecode}
