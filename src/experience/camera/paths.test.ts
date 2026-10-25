@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { BOOTH } from '@/experience/chapters/booth/layout';
 import {
   BULB_Y,
+  bulbPosition,
   CASSETTE_HALF_HEIGHT,
   CASSETTE_REACH,
   CASSETTE_WIDTH,
@@ -15,6 +16,7 @@ import {
   tapeLayout,
   tileScale,
   tileSlot,
+  tileState,
 } from '@/experience/chapters/depths/choreography';
 import { content } from '@/content';
 import { helixSlots, slotKeyframeT } from '@/experience/chapters/spiral/helix';
@@ -136,6 +138,35 @@ describe('camera paths', () => {
           expect((glint.off * 180) / Math.PI, where).toBeLessThan(8);
           expect(glint.along, where).toBeGreaterThan(0.3);
           expect(glint.along, where).toBeLessThan(0.6);
+        }
+      }
+    }
+  });
+
+  it('while the bulb swings on its cord and the tiles float, the glint keeps to the top edge of every tile, off the name', () => {
+    for (const [count, aspect] of [content.stack.length, 12, 20].flatMap((n) => [16 / 9, 375 / 812].map((a) => [n, a]))) {
+      const size = TILE.size * tileScale(count, aspect);
+      for (const t of [0.7, 0.8, 0.9]) {
+        const p = chapterP('stack', t);
+        const eye = new Vector3(...cameraPoseAt(p, 6).position);
+        for (let i = 0; i < count; i++) {
+          // A minute and a half: over a dozen swings of the bulb, and the tiles' own slower float.
+          for (let time = 0; time < 90; time += 0.37) {
+            const { position, rotation } = tileState(i, count, p, time, aspect);
+            const turn = new Euler(...rotation);
+            const face = new Vector3(0, 0, 1).applyEuler(turn);
+            const up = new Vector3(0, 1, 0).applyEuler(turn);
+            const middle = new Vector3(...position);
+            // Where the camera sees the bulb mirrored in the glaze.
+            const bulb = new Vector3(...bulbPosition(p, time));
+            const toward = bulb.addScaledVector(face, -2 * bulb.clone().sub(middle).dot(face)).sub(eye);
+            const glint = eye.clone().addScaledVector(toward, middle.clone().sub(eye).dot(face) / toward.dot(face));
+            const along = glint.sub(middle).dot(up) / size;
+            const where = `${count} tiles, tile ${i}, t=${t}, time ${time.toFixed(2)}, ${aspect.toFixed(2)}`;
+            // Its glitter runs a few centimetres down the glaze: on a phone's small tiles it has to start at the edge.
+            expect(along, where).toBeGreaterThan(0.43);
+            expect(along, where).toBeLessThan(0.6);
+          }
         }
       }
     }

@@ -1,3 +1,4 @@
+import { Euler, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { getChapter } from '@/timeline/chapters';
 import {
@@ -6,6 +7,9 @@ import {
   bulbDrop,
   bulbHaze,
   bulbIntensity,
+  bulbPosition,
+  CORD,
+  lampSwing,
   CASSETTE_HALF_HEIGHT,
   CASSETTE_REACH,
   CASSETTE_WIDTH,
@@ -66,6 +70,23 @@ describe('the bulb', () => {
     expect(bulbIntensity(at('stack', BULB_LIGHTS_T + 0.05))).toBeGreaterThan(0);
     expect(bulbDrop(at('stack', BULB_LIGHTS_T + 0.05))).toBe(0);
     expect(bulbDrop(at('contact', 0.5))).toBe(0);
+  });
+
+  it('swings on its cord: it is where the lamp, hung from the top of the cord and leaned as it swings, holds it', () => {
+    for (const p of [at('spiral', 0.9), at('stack', 0.05), at('stack', 0.8), at('contact', 0.5)]) {
+      for (const time of [0, 0.7, 1.9, 3.3, 12.5]) {
+        const [x, z] = lampSwing(time);
+        const held = new Vector3(0, -CORD, 0).applyEuler(new Euler(x, 0, z)).add(new Vector3(0, BULB_Y + CORD + bulbDrop(p), 0));
+        expect(dist(bulbPosition(p, time), held.toArray()), `p=${p} time=${time}`).toBeLessThan(1e-9);
+      }
+    }
+    // A pendulum the length of its cord, a few seconds a swing, out a hand's width or so either way.
+    const swing = 2 * Math.PI * Math.sqrt(CORD / 9.8);
+    const p = at('stack', 0.8);
+    expect(dist(bulbPosition(p, 1.3), bulbPosition(p, 1.3 + swing))).toBeLessThan(1e-9);
+    const out = Array.from({ length: 200 }, (_, k) => bulbPosition(p, (k * swing) / 200));
+    expect(Math.max(...out.map(([x]) => Math.abs(x)))).toBeGreaterThan(0.1);
+    expect(Math.max(...out.map(([x, , z]) => Math.hypot(x, z)))).toBeLessThan(0.3);
   });
 });
 

@@ -18,13 +18,10 @@ import { surgeLevel } from '@/experience/chapters/spiral/motion';
 import { createStaticScreens } from '@/experience/materials/staticScreens';
 import { useExperience } from '@/store/useExperience';
 import { useChapterFrame } from '../useChapterFrame';
-import { BULB_Y, bulbDrop, bulbHaze, bulbIntensity, dripRipples, FLOOR_Y } from './choreography';
+import { BULB_Y, bulbDrop, bulbHaze, bulbIntensity, CORD, dripRipples, FLOOR_Y, lampSwing } from './choreography';
 import { mergeRipples, tapeSplashes } from './splashes';
 import { WetFloor } from './wetFloor';
 
-const WIRE = 6;
-/** The lamp swings from the top of its cord, like a pendulum of that length (~4.9 s). */
-const SWING_HZ = 1 / (2 * Math.PI * Math.sqrt(WIRE / 9.8));
 const WARM = new Color('#ffb35c');
 /** The dark down here before the bulb, and once it is lit. sRGB. */
 const AIR_DARK = { sky: new Color().setRGB(0.29, 0.07, 0.06, SRGBColorSpace), ground: new Color().setRGB(0.03, 0.01, 0.01, SRGBColorSpace) };
@@ -117,9 +114,9 @@ export function Depths() {
     kit.update(time, level);
     if (light.current) light.current.intensity = 22 * level;
     if (lamp.current) {
-      const phase = time * SWING_HZ * 2 * Math.PI;
-      lamp.current.position.y = BULB_Y + WIRE + bulbDrop(p);
-      lamp.current.rotation.set(0.018 * Math.sin(phase + 1.2), 0, 0.035 * Math.sin(phase));
+      const [x, z] = lampSwing(time);
+      lamp.current.position.y = BULB_Y + CORD + bulbDrop(p);
+      lamp.current.rotation.set(x, 0, z);
     }
     if (hemi.current) {
       // The dark around is red with the problems, warm once the bulb is lit.
@@ -148,8 +145,8 @@ export function Depths() {
       <primitive object={kit.floor} />
       <primitive object={kit.props} />
       {/* Everything below hangs from the top of the cord, so it swings as one. */}
-      <group ref={lamp} position={[0, BULB_Y + WIRE, 0]}>
-        <group position={[0, -WIRE, 0]}>
+      <group ref={lamp} position={[0, BULB_Y + CORD, 0]}>
+        <group position={[0, -CORD, 0]}>
           <primitive object={kit.bulb} />
           <pointLight ref={light} color="#ffb35c" intensity={0} distance={40} decay={2} />
           {/* Light pouring off the bulb into the dust: it starts at the glass, with no rim. */}

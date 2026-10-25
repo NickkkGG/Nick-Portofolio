@@ -46,6 +46,23 @@ export function bulbDrop(p: number): number {
   return chapter.id === 'spiral' ? DROP : 0;
 }
 
+/** The bulb's cord, metres: the lamp swings from the top of it like a pendulum of that length (~4.9 s). */
+export const CORD = 6;
+const SWING_HZ = 1 / (2 * Math.PI * Math.sqrt(CORD / 9.8));
+
+/** How far the cord leans at scene `time`: Euler X and Z (XYZ) about its top, radians. */
+export function lampSwing(time: number): [number, number] {
+  const phase = time * SWING_HZ * 2 * Math.PI;
+  return [0.018 * Math.sin(phase + 1.2), 0.035 * Math.sin(phase)];
+}
+
+/** Where the bulb hangs at global p and scene `time`: at the bottom of its cord, swung out. */
+export function bulbPosition(p: number, time: number): Vec3 {
+  const [x, z] = lampSwing(time);
+  const down = CORD * Math.cos(z);
+  return [CORD * Math.sin(z), BULB_Y + CORD + bulbDrop(p) - down * Math.cos(x), -down * Math.sin(x)];
+}
+
 /** The tool tiles (stack/Tiles.tsx): glazed ceramic, true to a big wall tile, and the air between them. Metres. */
 export const TILE = { size: 0.42, thickness: 0.045, gap: 0.08 } as const;
 /** The wall the tiles make: this far behind the bulb, its middle at this height. */
@@ -114,18 +131,23 @@ const signed = (n: number, salt: number) => 2 * hash(n, salt) - 1;
 
 /** About where the camera hangs over the wall (camera/paths.ts). */
 const EYE: Vec3 = [0, -178.6, 1.4];
-/** Where on a tile the bulb glints, up from its middle as a share of its size: along its top edge, well clear of the name. */
-const GLINT_AT = 0.45;
+/**
+ * Where on a tile the bulb glints, up from its middle as a share of its size, measured upright: on
+ * the tile, leaned back to the light, that is right at its top edge. The glitter runs a few
+ * centimetres down the glaze whatever the tile's size; starting there, it stays off the name even
+ * on a phone's smaller tiles.
+ */
+const GLINT_AT = 0.53;
 
-/** Euler angles (X, Y) turning a tile at `at` to face halfway between the camera and the bulb: the bulb glints in its glaze. */
-function glinting(at: Vec3): [number, number] {
+/** Euler angles (X, Y) turning a tile at `at` to face halfway between the camera and the bulb at `bulb`: the bulb glints in its glaze. */
+function glinting(at: Vec3, bulb: Vec3): [number, number] {
   const unit = ([x, y, z]: Vec3): Vec3 => {
     const length = Math.hypot(x, y, z);
     return [x / length, y / length, z / length];
   };
   const eye = unit([EYE[0] - at[0], EYE[1] - at[1], EYE[2] - at[2]]);
-  const bulb = unit([-at[0], BULB_Y - at[1], -at[2]]);
-  const [x, y, z] = unit([eye[0] + bulb[0], eye[1] + bulb[1], eye[2] + bulb[2]]);
+  const light = unit([bulb[0] - at[0], bulb[1] - at[1], bulb[2] - at[2]]);
+  const [x, y, z] = unit([eye[0] + light[0], eye[1] + light[1], eye[2] + light[2]]);
   return [Math.atan2(-y, z), Math.asin(x)];
 }
 
@@ -144,9 +166,9 @@ export function tileSlot(i: number, count: number, aspect: number): { position: 
     WALL.y + ((rows - 1) / 2 - row) * step + 0.02 * scale * signed(i, 4),
     WALL.z + 0.05 * signed(i, 5),
   ];
-  const [x, y] = glinting([position[0], position[1] + GLINT_AT * TILE.size * scale, position[2]]);
-  // How far it tips out of true moves its glint, more so on a smaller tile: tipped in proportion.
-  return { position, rotation: [x + 0.012 * scale * signed(i, 6), y + 0.03 * signed(i, 7), 0.05 * signed(i, 8)] };
+  const [x, y] = glinting([position[0], position[1] + GLINT_AT * TILE.size * scale, position[2]], [0, BULB_Y, 0]);
+  // Out of true only sideways and about its middle: that slides the glint along the top edge, where tipping it would slide it onto the name.
+  return { position, rotation: [x, y + 0.03 * signed(i, 7), 0.05 * signed(i, 8)] };
 }
 
 /** Where tile `i` drifts in the dark beyond the wall before it comes in, turned every which way. */
@@ -195,10 +217,12 @@ export function tileState(i: number, count: number, p: number, time: number, asp
   const from = scattered(i, time);
   const mix = (a: Vec3, b: Vec3): Vec3 => [lerp(a[0], b[0], come), lerp(a[1], b[1], come), lerp(a[2], b[2], come)];
   const position = mix(from.position, slot.position);
-  const rotation = mix(from.rotation, slot.rotation);
   // A little arc on the way in, then the float of something hanging in still air.
   position[1] += 0.25 * Math.sin(Math.PI * u) + 0.015 * Math.sin(time * 0.9 + 1.3 * i) * settled;
-  rotation[0] += 0.012 * size * Math.sin(time * 0.7 + i) * settled;
+  // Tipped to the bulb where it is now, out on its swing, so the glint stays on the top edge; the
+  // float only turns it about its own up, which slides the glint along that edge.
+  const [tip] = glinting([position[0], position[1] + GLINT_AT * TILE.size * size, position[2]], bulbPosition(p, time));
+  const rotation = mix(from.rotation, [tip, slot.rotation[1], slot.rotation[2]]);
   rotation[1] += 0.035 * Math.sin(time * 0.5 + 2 * i) * settled;
   if (chapter.id === 'stack') return { position, rotation, scale: size };
   // Up and away into the dark, tumbling, before the tapes come up.
