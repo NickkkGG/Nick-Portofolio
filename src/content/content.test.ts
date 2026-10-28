@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { content } from './index';
 import { aboutSchema, channelLabel, contactSchema, padProjects, type Project, projectSchema, projectsSchema, scribbledHref } from './schema';
@@ -12,6 +14,27 @@ describe('content', () => {
     expect(content.projects).toHaveLength(6);
     expect(content.stack).toHaveLength(7);
     expect(content.contact.map((c) => c.label)).toEqual(['EMAIL', 'GITHUB', 'LINKEDIN', 'CV']);
+  });
+
+  it('project 01 is DINO with FRIENDS: live, with its preview video and a link to play it', () => {
+    expect(content.projects[0]).toEqual({
+      slug: 'project-01',
+      title: 'DINO with FRIENDS',
+      status: 'live',
+      summary: 'The offline dino runner, now multiplayer: share a lobby code and race up to 8 friends live on the same course.',
+      tags: ['Multiplayer', 'TypeScript', 'React', 'Cloudflare Workers'],
+      link: 'https://dino-with-friends.nicknelsoon30.workers.dev',
+      linkLabel: 'PLAY IT',
+      media: '/projects/project-01/preview.mp4',
+    });
+  });
+
+  it("every live project's media is a file in public/", () => {
+    const live = content.projects.filter((project) => project.status === 'live');
+    expect(live.length).toBeGreaterThan(0);
+    for (const project of live) {
+      expect(existsSync(fileURLToPath(new URL(`../../public${project.media}`, import.meta.url))), project.slug).toBe(true);
+    }
   });
 
   it('the room greets the visitor by name', () => {

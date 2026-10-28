@@ -225,6 +225,7 @@ export function Spiral() {
             glowRef={(spot) => {
               glowSpots.current[i] = spot;
             }}
+            preview={PROJECTS[i].status === 'live' ? PROJECTS[i].media : undefined}
           />
         ))}
         <pointLight ref={glow} color="#bfe6ff" intensity={0} distance={9} decay={1} />

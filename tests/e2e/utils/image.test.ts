@@ -1,6 +1,6 @@
 import { PNG } from 'pngjs';
 import { describe, expect, it } from 'vitest';
-import { brightBounds, brightRatio, diffRatio, litBlockRatio, meanLuminance } from './image';
+import { brightBounds, brightRatio, diffRatio, grain, litBlockRatio, meanLuminance } from './image';
 
 function png(pixels: [number, number, number, number][]): Buffer {
   const img = new PNG({ width: pixels.length, height: 1 });
@@ -23,6 +23,12 @@ describe('image utils', () => {
 
   it('diffRatio throws when sizes differ', () => {
     expect(() => diffRatio(png([[0, 0, 0, 255]]), png([[0, 0, 0, 255], [0, 0, 0, 255]]), 8)).toThrow();
+  });
+
+  it('grain is the mean luma step between horizontal neighbours: 0 when flat, 1 for black and white stripes', () => {
+    expect(grain(png([[90, 90, 90, 255], [90, 90, 90, 255], [90, 90, 90, 255]]))).toBe(0);
+    expect(grain(png([[0, 0, 0, 255], [255, 255, 255, 255], [0, 0, 0, 255]]))).toBeCloseTo(1);
+    expect(grain(png([[0, 0, 0, 255], [0, 0, 0, 255], [255, 255, 255, 255]]))).toBeCloseTo(0.5);
   });
 
   it('brightRatio counts pixels brighter than the luma threshold', () => {

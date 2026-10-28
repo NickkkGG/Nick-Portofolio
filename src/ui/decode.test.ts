@@ -31,6 +31,8 @@ describe('decoding text off the tape', () => {
 
   it('leaves spaces alone', () => {
     expect(decodeChar(' ', 0, 2, 1)).toEqual({ char: ' ', settled: true });
+    // The space that keeps a tag's words together is a space too.
+    expect(decodeChar('\u00a0', 0, 2, 1)).toEqual({ char: '\u00a0', settled: true });
   });
 });
 

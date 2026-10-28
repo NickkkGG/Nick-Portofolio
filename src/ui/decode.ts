@@ -28,9 +28,12 @@ export function glyphAt(index: number, time: number, seed = 0): string {
   return GLYPHS[Math.floor(hash(index + seed * 0.618, Math.floor(time / FLICKER)) * GLYPHS.length)];
 }
 
+/** A space of any kind (a tag's words are held together by no-break spaces): never scrambled, never heard. */
+export const isBlank = (char: string) => /\s/.test(char);
+
 /** Character `char` at position `index`, `age` seconds after it appeared, at scene time `time`. */
 export function decodeChar(char: string, age: number, index: number, time: number, seed = 0): { char: string; settled: boolean } {
-  if (char === ' ' || age >= SETTLE) return { char, settled: true };
+  if (isBlank(char) || age >= SETTLE) return { char, settled: true };
   return { char: glyphAt(index, time, seed), settled: false };
 }
 

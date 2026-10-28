@@ -105,10 +105,10 @@ test.describe('chapter texts decode off the tape', () => {
     await page.waitForTimeout(1000);
     await jumpTo(page, chapterP('spiral', 0.17));
     const texts = page.getByTestId('chapter-texts');
-    await expect(texts).toContainText('Project 01');
+    await expect(texts).toContainText('DINO with FRIENDS');
     expect(await texts.locator('[data-glyph]').count()).toBeGreaterThan(0);
     await expect(texts.locator('[data-glyph]')).toHaveCount(0);
-    await expect(texts).toContainText('Project 01');
+    await expect(texts).toContainText('DINO with FRIENDS');
   });
 
   test('freezing the clock mid-decode shows the words at once, so screenshots hold still', async ({ page }) => {

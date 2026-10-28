@@ -17,6 +17,8 @@ const projectBase = {
   role: z.string().optional(),
   tags: z.array(z.string()).default([]),
   link: z.url().optional(),
+  /** The words on that link in the WORK text, e.g. PLAY IT. */
+  linkLabel: z.string().min(1).optional(),
 };
 
 const liveProjectSchema = z.object({

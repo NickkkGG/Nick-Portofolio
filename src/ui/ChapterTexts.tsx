@@ -8,7 +8,7 @@ import { useExperience } from '@/store/useExperience';
 import { displayState } from '@/timeline/loop';
 import { DecodeText } from './DecodeText';
 import { showKnockHint } from './knockHint';
-import { revealFraction, TEXT_WINDOWS } from './reveal';
+import { revealFraction, TEXT_WINDOWS, typedCount } from './reveal';
 import { FocusBrackets } from './FocusBrackets';
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -41,6 +41,7 @@ function SpiralText({ t }: { t: number }) {
   const f = revealFraction(t, TEXT_WINDOWS.spiralProject);
   const index = focusedIndex(t, projects.length);
   const project = projects[index];
+  const linkText = `▸ ${project.linkLabel ?? 'VISIT'}`;
   return (
     <div data-overlay-item className="absolute right-10 top-1/3 max-w-sm text-right font-osd">
       <p className="text-xl tracking-widest opacity-70">
@@ -49,15 +50,34 @@ function SpiralText({ t }: { t: number }) {
       <p className="mt-2 text-5xl">
         <DecodeText text={project.title} fraction={f} />
       </p>
+      {project.summary && (
+        <p className="mt-2 text-lg leading-snug opacity-80">
+          <DecodeText text={project.summary} fraction={f} />
+        </p>
+      )}
       {project.tags.length > 0 && (
         <p className="mt-2 text-xl opacity-80">
-          <DecodeText text={project.tags.join(' · ')} fraction={f} />
+          {/* Lines break between tags, never inside one. */}
+          <DecodeText text={project.tags.map((tag) => tag.replaceAll(' ', '\u00a0')).join(' · ')} fraction={f} />
         </p>
       )}
       {project.status === 'no-signal' && (
         <p className="mt-3 text-xl tracking-widest text-screen">
           <DecodeText text={`NO SIGNAL · ${channelLabel(index)}`} fraction={f} />
         </p>
+      )}
+      {/* Not before its first letter is typed: an empty link would still take the keyboard. */}
+      {project.link && typedCount(linkText.length, f) > 0 && (
+        // The texts let the pointer through to the scene; the link takes it back.
+        <a
+          href={project.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="pointer-events-auto mt-4 inline-block text-2xl tracking-widest text-screen underline-offset-4 hover:underline focus-visible:underline"
+        >
+          <DecodeText text={linkText} fraction={f} />
+          <span className="sr-only"> (opens in a new tab)</span>
+        </a>
       )}
     </div>
   );

@@ -106,3 +106,21 @@ export function brightRatio(png: Buffer, threshold: number): number {
   for (let i = 0; i < pixels; i++) if (lumaAt(img.data, i) > threshold) bright++;
   return bright / pixels;
 }
+
+/**
+ * Mean luma step between horizontally neighbouring pixels, 0 (flat) to 1: TV static is
+ * all grain, a picture mostly is not.
+ */
+export function grain(png: Buffer): number {
+  const img = PNG.sync.read(png);
+  let sum = 0;
+  let steps = 0;
+  for (let y = 0; y < img.height; y++) {
+    for (let x = 1; x < img.width; x++) {
+      const i = y * img.width + x;
+      sum += Math.abs(lumaAt(img.data, i) - lumaAt(img.data, i - 1));
+      steps++;
+    }
+  }
+  return steps === 0 ? 0 : sum / steps;
+}

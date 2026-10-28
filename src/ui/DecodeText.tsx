@@ -3,7 +3,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { playSfx } from '@/audio/sfx';
 import { useExperience } from '@/store/useExperience';
-import { birthTimes, decodeChar, SETTLE, textSeed } from './decode';
+import { birthTimes, decodeChar, isBlank, SETTLE, textSeed } from './decode';
 import { typedCount } from './reveal';
 
 interface DecodeTextProps {
@@ -65,7 +65,7 @@ export function DecodeText({ text, fraction = 1, delay = 0, replay = 0 }: Decode
           char.dataset.glyph = shows.char;
           noisy = true;
         }
-        if (text[i] !== ' ' && at + SETTLE > heardUntil && at + SETTLE <= now) landed = true;
+        if (!isBlank(text[i]) && at + SETTLE > heardUntil && at + SETTLE <= now) landed = true;
       }
       if (landed) playSfx('tick', { pan });
       heardUntil = now;
