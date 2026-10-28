@@ -109,7 +109,7 @@ describe('the tiles', () => {
   });
 
   it('come together into a wall by the time the title is up, facing the camera, tipped back toward the bulb', () => {
-    expect(TILES_UP_T).toBeLessThanOrEqual(TEXT_WINDOWS.stackTitle.inEnd);
+    expect(TILES_UP_T).toBeLessThanOrEqual(TEXT_WINDOWS.stackTitle.from);
     all(at('stack', TILES_UP_T)).forEach((tile, i) => {
       expect(dist(tile.position, tileSlot(i, N, WIDE).position), `tile ${i}`).toBeLessThan(0.03);
       // The ones out at the ends turn in a little more, toward the light.
@@ -252,7 +252,7 @@ describe('the tapes', () => {
   });
 
   it('are all in place and turned to the camera before the hint asks to pick one', () => {
-    expect(TAPES_UP_T).toBeLessThanOrEqual(TEXT_WINDOWS.contactHint.inEnd);
+    expect(TAPES_UP_T).toBeLessThanOrEqual(TEXT_WINDOWS.contactHint.from);
     for (let i = 0; i < 4; i++) {
       const up = cassettePose(i, 4, TAPES_UP_T);
       const later = cassettePose(i, 4, 0.9);

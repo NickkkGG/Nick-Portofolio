@@ -105,10 +105,14 @@ test.describe('chapter texts decode off the tape', () => {
     await page.waitForTimeout(1000);
     await jumpTo(page, chapterP('spiral', 0.17));
     const texts = page.getByTestId('chapter-texts');
-    await expect(texts).toContainText('DINO with FRIENDS');
+    await expect(texts).toContainText('DINO with FRIENDS', { timeout: 5000 });
+    await expect(texts.locator('[data-glyph]')).toHaveCount(0);
+    // On to the third monitor: its words take the place of the first one's, all at once.
+    await jumpTo(page, chapterP('spiral', 0.46));
+    await expect(texts).toContainText('Project 03');
     expect(await texts.locator('[data-glyph]').count()).toBeGreaterThan(0);
     await expect(texts.locator('[data-glyph]')).toHaveCount(0);
-    await expect(texts).toContainText('DINO with FRIENDS');
+    await expect(texts).toContainText('Project 03');
   });
 
   test('freezing the clock mid-decode shows the words at once, so screenshots hold still', async ({ page }) => {

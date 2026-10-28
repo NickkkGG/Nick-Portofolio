@@ -8,14 +8,16 @@ import { useExperience } from '@/store/useExperience';
 import { displayState } from '@/timeline/loop';
 import { DecodeText } from './DecodeText';
 import { showKnockHint } from './knockHint';
-import { revealFraction, TEXT_WINDOWS, typedCount } from './reveal';
+import { isUp, TEXT_WINDOWS, typedCount } from './reveal';
 import { FocusBrackets } from './FocusBrackets';
+import { useTyped } from './useTyped';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const { site, projects, stack, contact } = content;
 
 function RoomText({ t }: { t: number }) {
-  const f = revealFraction(t, TEXT_WINDOWS.roomIntro);
+  // Already up on PLAY: the title waits for the picture as noise rather than typing in.
+  const f = useTyped(isUp(t, TEXT_WINDOWS.roomIntro), true);
   const hint = useExperience((s) => showKnockHint(s.time, s.lastActivity, s.p));
   // Blinks at 1 Hz on the store clock, like REC, so frozen screenshots stay still.
   const hintOn = useExperience((s) => Math.floor(s.time) % 2 === 0);
@@ -38,7 +40,7 @@ function RoomText({ t }: { t: number }) {
 }
 
 function SpiralText({ t }: { t: number }) {
-  const f = revealFraction(t, TEXT_WINDOWS.spiralProject);
+  const f = useTyped(isUp(t, TEXT_WINDOWS.spiralProject));
   const index = focusedIndex(t, projects.length);
   const project = projects[index];
   const linkText = `▸ ${project.linkLabel ?? 'VISIT'}`;
@@ -84,14 +86,16 @@ function SpiralText({ t }: { t: number }) {
 }
 
 function StackText({ t }: { t: number }) {
-  const hint = revealFraction(t, TEXT_WINDOWS.stackHint);
+  const title = useTyped(isUp(t, TEXT_WINDOWS.stackTitle));
+  // The hint follows the title in.
+  const hint = useTyped(title === 1);
   // A tile's name is painted on it, but small from here: the one under the pointer says it again.
   const tile = useExperience((s) => s.tile);
   const picked = tile === null ? null : stack[tile];
   return (
     <div data-overlay-item className="absolute left-1/2 top-24 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 text-center font-osd">
       <p className="text-4xl">
-        <DecodeText text={site.stackTitle} fraction={revealFraction(t, TEXT_WINDOWS.stackTitle)} />
+        <DecodeText text={site.stackTitle} fraction={title} />
       </p>
       <p data-testid="tile-hint" className="mt-3 text-base tracking-wider opacity-70 sm:text-xl sm:tracking-widest">
         {picked === null ? (
@@ -106,13 +110,14 @@ function StackText({ t }: { t: number }) {
 
 function ContactText({ t }: { t: number }) {
   // The links themselves are the tapes in the scene (and plain links in the content document).
-  const hint = revealFraction(t, TEXT_WINDOWS.contactHint);
+  const tagline = useTyped(isUp(t, TEXT_WINDOWS.contactTagline));
+  const hint = useTyped(isUp(t, TEXT_WINDOWS.contactHint) && tagline === 1);
   // A tape's own label is too small to read from here: the one under the pointer names its address.
   const tape = useExperience((s) => s.tape);
   return (
     <div data-overlay-item className="absolute left-1/2 top-24 w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 text-center font-osd">
       <p className="text-4xl">
-        <DecodeText text={site.tagline} fraction={revealFraction(t, TEXT_WINDOWS.contactTagline)} />
+        <DecodeText text={site.tagline} fraction={tagline} />
       </p>
       <p data-testid="tape-hint" className="mt-3 text-base tracking-wider opacity-70 sm:text-xl sm:tracking-widest">
         {tape === null ? (
@@ -125,7 +130,7 @@ function ContactText({ t }: { t: number }) {
   );
 }
 
-/** Chapter texts typed in by the scroll, decoding off the tape; the end of the loop already shows the room. */
+/** Chapter texts that type themselves in once the scroll reaches them, decoding off the tape; the end of the loop already shows the room. */
 export function ChapterTexts() {
   const started = useExperience((s) => s.started);
   const { chapterId, t } = useExperience(useShallow((s) => displayState(s.p)));

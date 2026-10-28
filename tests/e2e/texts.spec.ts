@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { chapterP, freeze, jumpTo, openExperience, play } from './helpers';
+import { chapterP, freeze, jumpTo, openExperience, play, state } from './helpers';
 
 const MOTTO = 'Every problem I run into becomes an idea.';
 const STACK_TITLE = "Tools I've picked up along the way";
+const TAGLINE = "Got a problem? I've got an idea.";
 
 test.describe('chapter texts', () => {
   test.beforeEach(async ({ page }) => {
@@ -76,20 +77,73 @@ test.describe('chapter texts', () => {
     expect(new Set(tops).size).toBe(1);
   });
 
-  test('the link waits for its text, so nothing unseen takes the keyboard', async ({ page }) => {
-    const texts = page.getByTestId('chapter-texts');
-    await jumpTo(page, chapterP('spiral', 0.1));
-    await expect(texts.getByRole('link')).toHaveCount(0);
-    await jumpTo(page, chapterP('spiral', 0.17));
-    await expect(texts.getByRole('link', { name: /PLAY IT/ })).toBeVisible();
-  });
-
   test('the STACK title waits for the wall of tiles', async ({ page }) => {
     const texts = page.getByTestId('chapter-texts');
     await jumpTo(page, chapterP('stack', 0.3));
     await expect(texts.getByText(STACK_TITLE)).toHaveCount(0);
     await jumpTo(page, chapterP('stack', 0.8));
     await expect(texts.getByText(STACK_TITLE)).toBeVisible();
+  });
+});
+
+test.describe('chapter texts type themselves out where the scroll stops', () => {
+  test.beforeEach(async ({ page }) => {
+    await openExperience(page);
+    await play(page);
+  });
+
+  test('standing at the first monitor, its words finish typing with no more scrolling', async ({ page }) => {
+    const texts = page.getByTestId('chapter-texts');
+    const at = chapterP('spiral', 0.1);
+    await jumpTo(page, chapterP('about', 0.5));
+    await jumpTo(page, at);
+    // Still typing just after the camera gets there...
+    expect(await texts.textContent()).toContain('█');
+    // ...and done a moment later, though the scroll has not moved.
+    await expect(texts).not.toContainText('█', { timeout: 5000 });
+    await expect(texts).toContainText('01 / 06');
+    await expect(texts).toContainText('DINO with FRIENDS');
+    await expect(texts).toContainText('race up to 8 friends live on the same course.');
+    await expect(texts).toContainText('Multiplayer · TypeScript · React · Cloudflare Workers');
+    await expect(texts.getByRole('link', { name: /PLAY IT/ })).toBeVisible();
+    expect((await state(page)).p).toBeCloseTo(at, 6);
+  });
+
+  test('so do the texts of the other chapters', async ({ page }) => {
+    const texts = page.getByTestId('chapter-texts');
+    const stops: [chapter: string, before: number, at: number, words: string[]][] = [
+      ['room', chapterP('room', 0.8), chapterP('room', 0.3), ["Hi, I'm Nick Nelson", 'Creative Developer']],
+      // Each hint follows its title in.
+      ['stack', chapterP('stack', 0.3), chapterP('stack', 0.7), [STACK_TITLE, '▸ point at a tile', 'on the wall']],
+      ['contact', chapterP('contact', 0.1), chapterP('contact', 0.5), [TAGLINE, '▸ pick a tape', 'on the shelf']],
+    ];
+    for (const [chapter, before, at, words] of stops) {
+      await jumpTo(page, before);
+      await expect(texts, chapter).not.toContainText('█', { timeout: 5000 });
+      await expect(texts, chapter).not.toContainText(words[0]);
+      await jumpTo(page, at);
+      expect(await texts.textContent(), chapter).toContain('█');
+      for (const word of words) await expect(texts, chapter).toContainText(word, { timeout: 5000 });
+      await expect(texts, chapter).not.toContainText('█');
+      expect((await state(page)).p, chapter).toBeCloseTo(at, 6);
+    }
+  });
+
+  test('the link waits for its text, so nothing unseen takes the keyboard', async ({ page }) => {
+    await jumpTo(page, chapterP('about', 0.5));
+    // Every frame while the text types in: whenever the link is there, some of its words are too.
+    const frames = await page.evaluate(async (p) => {
+      window.__experience!.jumpTo(p);
+      const seen: boolean[] = [];
+      for (let i = 0; i < 90; i++) {
+        await new Promise<void>((done) => requestAnimationFrame(() => done()));
+        const link = document.querySelector('[data-testid="chapter-texts"] a');
+        if (link) seen.push(link.querySelector('[data-i]') !== null);
+      }
+      return seen;
+    }, chapterP('spiral', 0.1));
+    expect(frames.length).toBeGreaterThan(0);
+    expect(frames).not.toContain(false);
   });
 });
 
